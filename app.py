@@ -1,4 +1,3 @@
-%%writefile app.py
 import streamlit as st
 import os
 from openai import OpenAI
@@ -179,4 +178,5 @@ if 'plan_sections' in st.session_state and st.session_state.plan_sections:
 
     st.info(sections["motivation"])
     st.warning(sections["disclaimer"], icon="⚠️")
+
 
