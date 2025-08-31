@@ -12,10 +12,11 @@ st.set_page_config(
 )
 
 # --- API Key Configuration ---
-api_key = os.environ.get("OPENAI_API_KEY")
+# The API key is securely accessed from Streamlit's Secrets manager
+api_key = st.secrets.get("OPENAI_API_KEY")
 
 if not api_key:
-    st.error("🚨 OPENAI_API_KEY environment variable not set! Please ensure it's set in your Colab notebook before running.")
+    st.error("🚨 OPENAI_API_KEY not found in Streamlit Secrets! Please add it in your app's settings.")
     st.stop()
 
 client = OpenAI(api_key=api_key)
@@ -35,7 +36,6 @@ def generate_image(prompt):
         )
         return response.data[0].url
     except Exception as e:
-        # Don't show a full error, just return None so the app doesn't crash
         print(f"Image generation failed: {e}")
         return None
 
@@ -48,7 +48,6 @@ def parse_plan(plan_text):
         "motivation": "Motivational tip not found.",
         "disclaimer": "Disclaimer not found."
     }
-    # Find top-level sections
     calorie_match = re.search(r"### Estimated Daily Calorie Target ###\s*(.*?)\s*(?=\n###|$)", plan_text, re.DOTALL)
     diet_section_match = re.search(r"### Detailed Diet Plan ###\s*(.*?)\s*(?=\n###|$)", plan_text, re.DOTALL)
     exercise_section_match = re.search(r"### Detailed Exercise Plan ###\s*(.*?)\s*(?=\n###|$)", plan_text, re.DOTALL)
@@ -59,7 +58,6 @@ def parse_plan(plan_text):
     if motivation_match: sections["motivation"] = motivation_match.group(1).strip()
     if disclaimer_match: sections["disclaimer"] = disclaimer_match.group(1).strip()
 
-    # Find items within diet and exercise sections
     if diet_section_match:
         diet_text = diet_section_match.group(1)
         sections["diet"] = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*?)\s*\[Image Prompt:\s*(.*?)\]", diet_text, re.DOTALL)
@@ -160,7 +158,7 @@ if 'plan_sections' in st.session_state and st.session_state.plan_sections:
                 with st.spinner("🎨 Generating meal image..."):
                     image_url = generate_image(img_prompt)
                     if image_url:
-                        st.image(image_url, use_column_width=True)
+                        st.image(image_url, use_container_width=True) # <-- UPDATED
             st.divider()
 
     with tab2:
@@ -173,10 +171,9 @@ if 'plan_sections' in st.session_state and st.session_state.plan_sections:
                 with st.spinner("🎨 Generating exercise image..."):
                     image_url = generate_image(img_prompt)
                     if image_url:
-                        st.image(image_url, use_column_width=True)
+                        st.image(image_url, use_container_width=True) # <-- UPDATED
             st.divider()
 
     st.info(sections["motivation"])
     st.warning(sections["disclaimer"], icon="⚠️")
-
 
