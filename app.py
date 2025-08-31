@@ -11,16 +11,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Animated Background & Dark Theme CSS ---
-# Injects CSS to create a beautiful, moving gradient background and sets a dark theme.
+# --- Animated Background & New Dark Theme CSS ---
+# Injects CSS to create a beautiful, moving gradient background and sets a new dark theme based on the provided palette.
 page_bg_img = """
 <style>
-/* Main animated background */
+/* Main animated background using Background palette */
 [data-testid="stAppViewContainer"] {
-    background-image: linear-gradient(-45deg, #0f0c29, #302b63, #24243e);
+    background-image: linear-gradient(-45deg, #040608, #15202a, #0d1319);
     animation: gradient 15s ease infinite;
     background-size: 400% 400%;
-    color: #ffffff; /* Set default text color to white for visibility */
+    color: #fafafb; /* Use Text-100 for default text */
 }
 
 @keyframes gradient {
@@ -29,57 +29,57 @@ page_bg_img = """
     100% {background-position: 0% 50%;}
 }
 
-/* Make text in all headers and subheaders light */
+/* Make text in all headers and subheaders light using Text-100 */
 h1, h2, h3, h4, h5, h6 {
-    color: #f0f2f6;
+    color: #fafafb;
 }
 
-/* Style the sidebar for dark theme */
+/* Style the sidebar for dark theme using Background-300 */
 [data-testid="stSidebar"] {
-    background-color: rgba(10, 10, 20, 0.7); /* Dark, semi-transparent sidebar */
+    background-color: rgba(21, 32, 42, 0.7); /* Background-300 with transparency */
 }
 
-/* Style the chat messages for dark theme */
+/* Style the chat messages for dark theme using Background-300 */
 [data-testid="stChatMessage"] {
-    background-color: rgba(40, 40, 60, 0.8); /* Darker chat bubble */
+    background-color: rgba(21, 32, 42, 0.8); /* Background-300 with transparency */
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1rem;
 }
 
-/* Ensure metric labels are visible */
+/* Ensure metric labels are visible using Text-300 */
 [data-testid="stMetricLabel"] {
-    color: #a0a0b0;
+    color: #dedee4;
 }
 
-/* Make Streamlit buttons more visible on dark background */
+/* Make Streamlit buttons more visible using Text-100 and Accent-100 */
 .stButton>button {
-    border: 1px solid #ffffff;
-    color: #ffffff;
+    border: 1px solid #fafafb;
+    color: #fafafb;
     background-color: transparent;
 }
 .stButton>button:hover {
-    border: 1px solid #85FFBD;
-    color: #85FFBD;
-    background-color: rgba(133, 255, 189, 0.1);
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+    background-color: rgba(231, 76, 60, 0.1);
 }
 
-/* Improve visibility of tabs */
+/* Improve visibility of tabs using Background-200 and Accent-100 */
 .stTabs [data-baseweb="tab-list"] {
     gap: 24px;
 }
 .stTabs [data-baseweb="tab"] {
     height: 50px;
     white-space: pre-wrap;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(13, 19, 25, 0.5); /* Background-200 with transparency */
     border-radius: 4px 4px 0px 0px;
     gap: 1px;
     padding-top: 10px;
     padding-bottom: 10px;
 }
 .stTabs [aria-selected="true"] {
-    background-color: #85FFBD;
-    color: #0f0c29;
+    background-color: #e74c3c; /* Accent-100 */
+    color: #fafafb; /* Text-100 */
     font-weight: bold;
 }
 
