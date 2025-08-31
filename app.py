@@ -57,12 +57,19 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid #fafafb;
     color: #fafafb;
     background-color: transparent;
+    transition: all 0.2s ease-in-out;
 }
 .stButton>button:hover {
     border: 1px solid #e74c3c;
     color: #e74c3c;
     background-color: rgba(231, 76, 60, 0.1);
 }
+.stButton>button:active {
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+    background-color: rgba(231, 76, 60, 0.2);
+}
+
 
 /* Improve visibility of tabs using Background-200 and Accent-100 */
 .stTabs [data-baseweb="tab-list"] {
@@ -76,11 +83,20 @@ h1, h2, h3, h4, h5, h6 {
     gap: 1px;
     padding-top: 10px;
     padding-bottom: 10px;
+    transition: all 0.2s ease-in-out;
 }
 .stTabs [aria-selected="true"] {
     background-color: #e74c3c; /* Accent-100 */
     color: #fafafb; /* Text-100 */
     font-weight: bold;
+}
+
+/* Style the bordered containers to look like cards */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background-color: rgba(21, 32, 42, 0.5); /* Background-300 with transparency */
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(62, 88, 113, 0.3); /* Primary-200 with transparency */
 }
 
 </style>
@@ -205,12 +221,9 @@ with plan_tab:
         col1, col2 = st.columns([3,1])
         with col1:
             day_options = [f"Day {i+1}" for i in range(len(weekly_plan))]
-            selected_day_str = st.selectbox("Select a day to view:", day_options, key="day_selector")
-            selected_day_index = day_options.index(selected_day_str)
+            selected_day_str = st.selectbox("Select a day to view:", day_options, label_visibility="collapsed", key="day_selector")
         
         with col2:
-            st.write("") # Spacer
-            st.write("") # Spacer
             if st.button("🛒 Generate Shopping List", use_container_width=True):
                 diet_plan_text = "\n".join([f"Day {i+1}:\n" + "\n".join([item[1] for item in day['diet']]) for i, day in enumerate(weekly_plan)])
                 with st.spinner("Analyzing your diet plan..."):
@@ -221,52 +234,70 @@ with plan_tab:
             with st.expander("Your Consolidated Shopping List", expanded=True):
                 st.markdown(st.session_state.shopping_list)
 
+        selected_day_index = day_options.index(selected_day_str)
         day_plan = weekly_plan[selected_day_index]
-        st.header(f"Plan for Day {selected_day_index + 1}")
-
-        st.subheader("🎯 Daily Calorie Target")
-        st.metric(label="Estimated Calories", value=re.search(r'\d[\d,]*', day_plan["calories"]).group(0) if re.search(r'\d[\d,]*', day_plan["calories"]) else "N/A")
         
+        st.header(f"Dashboard for Day {selected_day_index + 1}")
+
+        # --- Dashboard Metrics ---
+        dash_col1, dash_col2 = st.columns(2)
+        with dash_col1:
+            with st.container(border=True):
+                st.subheader("🎯 Daily Calorie Target")
+                st.metric(label="Estimated Calories", value=re.search(r'\d[\d,]*', day_plan["calories"]).group(0) if re.search(r'\d[\d,]*', day_plan["calories"]) else "N/A")
+        with dash_col2:
+            with st.container(border=True):
+                st.subheader("💡 Motivational Tip")
+                st.write(day_plan['motivation'])
+
+        st.divider()
+
         diet_tab, exercise_tab = st.tabs(["🍎 Diet Plan", "🏋️ Exercise Plan"])
         with diet_tab:
+            st.subheader("Today's Meals")
             for i, (name, instructions) in enumerate(day_plan["diet"]):
-                st.subheader(name)
-                st.markdown(instructions.strip())
-                
-                query = f"how to make {name.split(':')[-1].strip()}"
-                yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-                st.link_button("▶️ Find Recipe on YouTube", yt_url, use_container_width=True)
+                with st.container(border=True):
+                    st.markdown(f"**{name}**")
+                    st.markdown(instructions.strip())
+                    
+                    btn_col1, btn_col2 = st.columns(2)
+                    with btn_col1:
+                        query = f"how to make {name.split(':')[-1].strip()}"
+                        yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
+                        st.link_button("▶️ Find Recipe on YouTube", yt_url, use_container_width=True)
+                    with btn_col2:
+                        if st.button("🔄 Suggest Alternative", key=f"swap_diet_{selected_day_index}_{i}", use_container_width=True):
+                            with st.spinner("Finding a tasty alternative..."):
+                                prompt = f"Suggest a single alternative meal for '{name}' with a similar calorie count and dietary profile ({diet_preference}). Structure the response exactly like this: **New Meal Name**\nInstructions..."
+                                alternative = generate_api_call(prompt)
+                                if alternative:
+                                    new_item = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*)", alternative, re.DOTALL)[0]
+                                    st.session_state.weekly_plan[selected_day_index]["diet"][i] = new_item
+                                    st.rerun()
 
-                if st.button("🔄 Suggest Alternative", key=f"swap_diet_{selected_day_index}_{i}", use_container_width=True):
-                    with st.spinner("Finding a tasty alternative..."):
-                        prompt = f"Suggest a single alternative meal for '{name}' with a similar calorie count and dietary profile ({diet_preference}). Structure the response exactly like this: **New Meal Name**\nInstructions..."
-                        alternative = generate_api_call(prompt)
-                        if alternative:
-                            new_item = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*)", alternative, re.DOTALL)[0]
-                            st.session_state.weekly_plan[selected_day_index]["diet"][i] = new_item
-                            st.rerun()
-                st.divider()
         with exercise_tab:
+            st.subheader("Today's Workout")
             for i, (name, instructions) in enumerate(day_plan["exercise"]):
-                st.subheader(name)
-                st.markdown(instructions.strip())
+                with st.container(border=True):
+                    st.markdown(f"**{name}**")
+                    st.markdown(instructions.strip())
+                    
+                    btn_col1, btn_col2 = st.columns(2)
+                    with btn_col1:
+                        query = f"how to do {name.strip()}"
+                        yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
+                        st.link_button("▶️ Watch Tutorial on YouTube", yt_url, use_container_width=True)
+                    with btn_col2:
+                        if st.button("🔄 Suggest Alternative", key=f"swap_exercise_{selected_day_index}_{i}", use_container_width=True):
+                             with st.spinner("Finding a different exercise..."):
+                                prompt = f"Suggest a single alternative exercise for '{name}' that targets similar muscle groups. Structure the response exactly like this: **New Exercise Name**\nInstructions..."
+                                alternative = generate_api_call(prompt)
+                                if alternative:
+                                    new_item = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*)", alternative, re.DOTALL)[0]
+                                    st.session_state.weekly_plan[selected_day_index]["exercise"][i] = new_item
+                                    st.rerun()
 
-                query = f"how to do {name.strip()}"
-                yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-                st.link_button("▶️ Watch Tutorial on YouTube", yt_url, use_container_width=True)
-                
-                if st.button("🔄 Suggest Alternative", key=f"swap_exercise_{selected_day_index}_{i}", use_container_width=True):
-                     with st.spinner("Finding a different exercise..."):
-                        prompt = f"Suggest a single alternative exercise for '{name}' that targets similar muscle groups. Structure the response exactly like this: **New Exercise Name**\nInstructions..."
-                        alternative = generate_api_call(prompt)
-                        if alternative:
-                            new_item = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*)", alternative, re.DOTALL)[0]
-                            st.session_state.weekly_plan[selected_day_index]["exercise"][i] = new_item
-                            st.rerun()
-                st.divider()
-
-        st.info(f"💡 Motivational Tip: {day_plan['motivation']}")
-        st.warning(day_plan["disclaimer"], icon="⚠️")
+        st.warning(f"**Disclaimer:** {day_plan['disclaimer']}", icon="⚠️")
 
 # --- AI Health Chat Tab ---
 with chat_tab:
@@ -281,7 +312,7 @@ with chat_tab:
 
     # Display chat messages from history
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
+        with st.chat_message(message["role"], avatar="💪" if message["role"] == "assistant" else "👤"):
             st.markdown(message["content"])
 
     # Accept user input
@@ -289,11 +320,11 @@ with chat_tab:
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
         # Display user message in chat message container
-        with st.chat_message("user"):
+        with st.chat_message("user", avatar="👤"):
             st.markdown(prompt)
 
         # Display assistant response in chat message container
-        with st.chat_message("assistant"):
+        with st.chat_message("assistant", avatar="💪"):
             # Create the system prompt with context
             system_prompt = {
                 "role": "system",
