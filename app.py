@@ -11,29 +11,78 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Animated Background ---
-# Injects CSS to create a beautiful, moving gradient background.
+# --- Animated Background & Dark Theme CSS ---
+# Injects CSS to create a beautiful, moving gradient background and sets a dark theme.
 page_bg_img = """
 <style>
+/* Main animated background */
 [data-testid="stAppViewContainer"] {
-    background-image: linear-gradient(45deg, #85FFBD 0%, #FFFB7D 100%);
+    background-image: linear-gradient(-45deg, #0f0c29, #302b63, #24243e);
     animation: gradient 15s ease infinite;
     background-size: 400% 400%;
+    color: #ffffff; /* Set default text color to white for visibility */
 }
+
 @keyframes gradient {
     0% {background-position: 0% 50%;}
     50% {background-position: 100% 50%;}
     100% {background-position: 0% 50%;}
 }
-[data-testid="stSidebar"] {
-    background-color: rgba(255, 255, 255, 0.5); /* Make sidebar slightly transparent */
+
+/* Make text in all headers and subheaders light */
+h1, h2, h3, h4, h5, h6 {
+    color: #f0f2f6;
 }
+
+/* Style the sidebar for dark theme */
+[data-testid="stSidebar"] {
+    background-color: rgba(10, 10, 20, 0.7); /* Dark, semi-transparent sidebar */
+}
+
+/* Style the chat messages for dark theme */
 [data-testid="stChatMessage"] {
-    background-color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(40, 40, 60, 0.8); /* Darker chat bubble */
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1rem;
 }
+
+/* Ensure metric labels are visible */
+[data-testid="stMetricLabel"] {
+    color: #a0a0b0;
+}
+
+/* Make Streamlit buttons more visible on dark background */
+.stButton>button {
+    border: 1px solid #ffffff;
+    color: #ffffff;
+    background-color: transparent;
+}
+.stButton>button:hover {
+    border: 1px solid #85FFBD;
+    color: #85FFBD;
+    background-color: rgba(133, 255, 189, 0.1);
+}
+
+/* Improve visibility of tabs */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 24px;
+}
+.stTabs [data-baseweb="tab"] {
+    height: 50px;
+    white-space: pre-wrap;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px 4px 0px 0px;
+    gap: 1px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+.stTabs [aria-selected="true"] {
+    background-color: #85FFBD;
+    color: #0f0c29;
+    font-weight: bold;
+}
+
 </style>
 """
 st.markdown(page_bg_img, unsafe_allow_html=True)
