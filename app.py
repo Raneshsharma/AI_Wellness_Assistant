@@ -19,30 +19,64 @@ def apply_css(css_style):
     """Applies a CSS style block to the Streamlit app."""
     st.markdown(f"<style>{css_style}</style>", unsafe_allow_html=True)
 
-def get_login_css(gif_url):
-    """Returns CSS for the login page with a background GIF."""
-    return f"""
-    [data-testid="stAppViewContainer"] {{
-        background-image: url('{gif_url}');
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-position: center;
-    }}
-    [data-testid="stHeader"] {{
-        background-color: rgba(0,0,0,0);
-    }}
-    .stButton>button {{
-        border: 2px solid #fafafb;
-        color: #fafafb;
-        background-color: rgba(0,0,0,0.5);
-        transition: all 0.2s ease-in-out;
-        width: 100%;
-    }}
-    .stButton>button:hover {{
-        border-color: #e74c3c;
-        color: #e74c3c;
-    }}
+def inject_video_background():
+    """Injects CSS and HTML for a YouTube video background on the login page."""
+    video_id = "XMwzUDoBuIY"  # Extracted from your link
+    video_html = f"""
+    <style>
+        /* Make the main app container transparent over the video */
+        [data-testid="stAppViewContainer"] > .main {{
+            background: none;
+        }}
+        [data-testid="stHeader"] {{
+            background-color: rgba(0,0,0,0);
+        }}
+        /* Container to hold the video and ensure it covers the screen */
+        .video-container {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: -100;
+        }}
+        /* Style the iframe to cover the container, maintaining aspect ratio */
+        .video-container iframe {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100vw;
+            height: 56.25vw; /* 16:9 Aspect Ratio */
+            min-height: 100vh;
+            min-width: 177.77vh; /* 16:9 Aspect Ratio */
+            transform: translate(-50%, -50%);
+            filter: brightness(0.4); /* Dim the video */
+        }}
+        /* Style the login form elements on top of the video */
+        .stButton>button {{
+            border: 2px solid #fafafb;
+            color: #fafafb;
+            background-color: rgba(0,0,0,0.5);
+            transition: all 0.2s ease-in-out;
+            width: 100%;
+        }}
+        .stButton>button:hover {{
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }}
+    </style>
+    <div class="video-container">
+        <iframe
+            src="https://www.youtube.com/embed/{video_id}?autoplay=1&loop=1&mute=1&controls=0&playlist={video_id}&showinfo=0&autohide=1&modestbranding=1"
+            frameborder="0"
+            allow="autoplay; encrypted-media"
+            allowfullscreen>
+        </iframe>
+    </div>
     """
+    st.markdown(video_html, unsafe_allow_html=True)
+
 
 def get_main_app_css():
     """Returns CSS for the main application with the animated dark theme."""
@@ -155,10 +189,9 @@ def generate_wellness_plan(age, gender, height, weight, diet_preference, fitness
 
 def login_page():
     """Displays the login and sign-up page."""
+    inject_video_background()
     st.title("Welcome to AI Wellness Coach Pro 💪")
-    gif_url = st.text_input("Enter a GIF URL for the background:", "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExd2RzNjU2aWt1aHd2dWFtbWhuZHk3Mzl6NXY0amJ5c3F4Mnd0Z3NpNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/s3n8nAmI3AMs146W4o/giphy.gif")
-    apply_css(get_login_css(gif_url))
-
+    
     if 'page' not in st.session_state:
         st.session_state.page = 'Login'
 
