@@ -97,20 +97,6 @@ client = OpenAI(api_key=api_key)
 
 # --- Helper Functions ---
 
-@st.cache_data(show_spinner=False)
-def generate_image(prompt):
-    """Generates an image using DALL-E 3."""
-    try:
-        response = client.images.generate(
-            model="dall-e-3",
-            prompt=f"Create a vibrant, high-quality, photorealistic image for a wellness app: {prompt}. Ensure there is no text in the image.",
-            size="1024x1024", quality="standard", n=1,
-        )
-        return response.data[0].url
-    except Exception as e:
-        print(f"Image generation failed: {e}")
-        return None
-
 def parse_weekly_plan(plan_text):
     """Parses a 7-day plan into a structured list of dictionaries."""
     days = re.split(r"##\s*Day\s*\d+\s*##", plan_text)[1:]
@@ -127,8 +113,9 @@ def parse_weekly_plan(plan_text):
         }
         day_plan = {k: v.group(1).strip() if v else "" for k, v in day_data.items()}
         day_plan["disclaimer"] = disclaimer_text
-        day_plan["diet"] = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*?)\s*\[Image Prompt:\s*(.*?)\]", day_plan.get("diet", ""), re.DOTALL)
-        day_plan["exercise"] = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*?)\s*\[Image Prompt:\s*(.*?)\]", day_plan.get("exercise", ""), re.DOTALL)
+        # Updated regex to find bolded title and the following instructions
+        day_plan["diet"] = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*?)(?=\n\*\*|\Z)", day_plan.get("diet", ""), re.DOTALL)
+        day_plan["exercise"] = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*?)(?=\n\*\*|\Z)", day_plan.get("exercise", ""), re.DOTALL)
         parsed_plan.append(day_plan)
     return parsed_plan
 
@@ -149,7 +136,7 @@ def generate_api_call(prompt, model="gpt-4o"):
         return None
 
 def generate_wellness_plan(age, gender, height, weight, diet_preference, fitness_goal):
-    """Constructs a prompt for a full 7-day plan."""
+    """Constructs a prompt for a full 7-day plan without image prompts."""
     prompt = f"""
     Act as an expert wellness coach. A user has provided their details for a personalized plan.
     Your response MUST be structured for a full 7-day week.
@@ -169,8 +156,8 @@ def generate_wellness_plan(age, gender, height, weight, diet_preference, fitness
     Generate a comprehensive 7-day wellness plan.
     For each meal (Breakfast, Lunch, Dinner, Snack) and exercise, provide:
     1. The name in bold (e.g., **Breakfast: Scrambled Eggs**).
-    2. The instructions.
-    3. An image prompt in the format: [Image Prompt: A detailed, photorealistic description].
+    2. Clear and concise instructions.
+    Do NOT include image prompts.
     """
     return generate_api_call(prompt)
     
@@ -197,13 +184,13 @@ plan_tab, chat_tab = st.tabs(["📅 Plan Generator", "💬 AI Health Chat"])
 # --- Plan Generator Tab ---
 with plan_tab:
     st.header("Your Personalized 7-Day Plan")
-    st.markdown("Fill in your details in the sidebar and click the button to generate your unique, visual wellness guide!")
+    st.markdown("Fill in your details in the sidebar and click the button to generate your unique wellness guide!")
 
     if "plan_generated" not in st.session_state:
         st.session_state.plan_generated = False
 
     if submit_button:
-        with st.spinner("Your AI coach is crafting the perfect 7-day plan... (This may take up to 2 minutes)"):
+        with st.spinner("Your AI coach is crafting the perfect 7-day plan... This will be quick!"):
             full_plan = generate_wellness_plan(age, gender, height, weight, diet_preference, fitness_goal)
             if full_plan:
                 st.session_state.weekly_plan = parse_weekly_plan(full_plan)
@@ -242,42 +229,40 @@ with plan_tab:
         
         diet_tab, exercise_tab = st.tabs(["🍎 Diet Plan", "🏋️ Exercise Plan"])
         with diet_tab:
-            for i, (name, instructions, img_prompt) in enumerate(day_plan["diet"]):
+            for i, (name, instructions) in enumerate(day_plan["diet"]):
                 st.subheader(name)
-                d_col1, d_col2 = st.columns([1,1])
-                with d_col1:
-                    st.markdown(instructions)
-                    if st.button("🔄 Suggest Alternative", key=f"swap_diet_{selected_day_index}_{i}"):
-                        with st.spinner("Finding a tasty alternative..."):
-                            prompt = f"Suggest a single alternative meal for '{name}' with a similar calorie count and dietary profile ({diet_preference}). Structure the response exactly like this: **New Meal Name**\nInstructions...\n[Image Prompt: description...]"
-                            alternative = generate_api_call(prompt)
-                            if alternative:
-                                new_item = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*?)\s*\[Image Prompt:\s*(.*?)\]", alternative, re.DOTALL)[0]
-                                st.session_state.weekly_plan[selected_day_index]["diet"][i] = new_item
-                                st.rerun()
-                with d_col2:
-                    with st.spinner("🎨 Generating meal image..."):
-                        image_url = generate_image(img_prompt)
-                        if image_url: st.image(image_url, use_container_width=True)
+                st.markdown(instructions.strip())
+                
+                query = f"how to make {name.split(':')[-1].strip()}"
+                yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
+                st.link_button("▶️ Find Recipe on YouTube", yt_url, use_container_width=True)
+
+                if st.button("🔄 Suggest Alternative", key=f"swap_diet_{selected_day_index}_{i}", use_container_width=True):
+                    with st.spinner("Finding a tasty alternative..."):
+                        prompt = f"Suggest a single alternative meal for '{name}' with a similar calorie count and dietary profile ({diet_preference}). Structure the response exactly like this: **New Meal Name**\nInstructions..."
+                        alternative = generate_api_call(prompt)
+                        if alternative:
+                            new_item = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*)", alternative, re.DOTALL)[0]
+                            st.session_state.weekly_plan[selected_day_index]["diet"][i] = new_item
+                            st.rerun()
                 st.divider()
         with exercise_tab:
-            for i, (name, instructions, img_prompt) in enumerate(day_plan["exercise"]):
+            for i, (name, instructions) in enumerate(day_plan["exercise"]):
                 st.subheader(name)
-                e_col1, e_col2 = st.columns([1,1])
-                with e_col1:
-                    st.markdown(instructions)
-                    if st.button("🔄 Suggest Alternative", key=f"swap_exercise_{selected_day_index}_{i}"):
-                         with st.spinner("Finding a different exercise..."):
-                            prompt = f"Suggest a single alternative exercise for '{name}' that targets similar muscle groups. Structure the response exactly like this: **New Exercise Name**\nInstructions...\n[Image Prompt: description...]"
-                            alternative = generate_api_call(prompt)
-                            if alternative:
-                                new_item = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*?)\s*\[Image Prompt:\s*(.*?)\]", alternative, re.DOTALL)[0]
-                                st.session_state.weekly_plan[selected_day_index]["exercise"][i] = new_item
-                                st.rerun()
-                with e_col2:
-                    with st.spinner("🎨 Generating exercise image..."):
-                        image_url = generate_image(img_prompt)
-                        if image_url: st.image(image_url, use_container_width=True)
+                st.markdown(instructions.strip())
+
+                query = f"how to do {name.strip()}"
+                yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
+                st.link_button("▶️ Watch Tutorial on YouTube", yt_url, use_container_width=True)
+                
+                if st.button("🔄 Suggest Alternative", key=f"swap_exercise_{selected_day_index}_{i}", use_container_width=True):
+                     with st.spinner("Finding a different exercise..."):
+                        prompt = f"Suggest a single alternative exercise for '{name}' that targets similar muscle groups. Structure the response exactly like this: **New Exercise Name**\nInstructions..."
+                        alternative = generate_api_call(prompt)
+                        if alternative:
+                            new_item = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*)", alternative, re.DOTALL)[0]
+                            st.session_state.weekly_plan[selected_day_index]["exercise"][i] = new_item
+                            st.rerun()
                 st.divider()
 
         st.info(f"💡 Motivational Tip: {day_plan['motivation']}")
