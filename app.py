@@ -21,151 +21,196 @@ def apply_css(css_style):
     st.markdown(f"<style>{css_style}</style>", unsafe_allow_html=True)
 
 def inject_video_background():
-    """Injects CSS and HTML for a YouTube video background on the login page."""
-    video_id = "XMwzUDoBuIY"  # Extracted from your link
-    video_html = f"""
+    """Injects CSS and HTML for an animated background on the login page."""
+    background_css = """
     <style>
         /* Hide Streamlit elements for cleaner look */
-        #MainMenu {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
-        header {{visibility: hidden;}}
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
         
-        /* Make the main app container transparent over the video */
-        [data-testid="stAppViewContainer"] > .main {{
-            background: none;
+        /* Animated gradient background */
+        [data-testid="stAppViewContainer"] > .main {
+            background: linear-gradient(-45deg, #0f1419, #1a252f, #15202a, #0d1117, #2c1810, #1a1a2e);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
             padding-top: 2rem;
-        }}
-        [data-testid="stHeader"] {{
-            background-color: rgba(0,0,0,0);
-        }}
+            min-height: 100vh;
+        }
         
-        /* Container to hold the video and ensure it covers the screen */
-        .video-container {{
+        @keyframes gradientMove {
+            0% {background-position: 0% 50%;}
+            50% {background-position: 100% 50%;}
+            100% {background-position: 0% 50%;}
+        }
+        
+        /* Floating particles effect */
+        .particles {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
-            z-index: -100;
-        }}
+            z-index: -1;
+        }
         
-        /* Style the iframe to cover the container, maintaining aspect ratio */
-        .video-container iframe {{
+        .particle {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100vw;
-            height: 56.25vw; /* 16:9 Aspect Ratio */
-            min-height: 100vh;
-            min-width: 177.77vh; /* 16:9 Aspect Ratio */
-            transform: translate(-50%, -50%);
-            filter: brightness(0.3) contrast(1.2); /* Dim and enhance contrast */
-        }}
+            display: block;
+            pointer-events: none;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #e74c3c;
+            opacity: 0.6;
+            animation: float 6s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.6; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+        
+        [data-testid="stHeader"] {
+            background-color: rgba(0,0,0,0);
+        }
         
         /* Enhanced login container styling */
-        .login-container {{
-            background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(21, 32, 42, 0.9) 100%);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-            padding: 2rem;
+        .login-container {
+            background: linear-gradient(135deg, rgba(0,0,0,0.85) 0%, rgba(21, 32, 42, 0.9) 50%, rgba(15, 20, 25, 0.85) 100%);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            border: 2px solid rgba(231, 76, 60, 0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(231, 76, 60, 0.1);
+            padding: 3rem;
             margin: 2rem auto;
-            max-width: 500px;
-        }}
+            max-width: 550px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #e74c3c, #f39c12, #e74c3c, #c0392b);
+            background-size: 400% 400%;
+            border-radius: 25px;
+            z-index: -1;
+            animation: borderGlow 4s ease infinite;
+        }
+        
+        @keyframes borderGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
         
         /* Welcome text styling */
-        .welcome-title {{
+        .welcome-title {
             text-align: center;
             color: #fafafb;
-            font-size: 2.5rem;
-            font-weight: 700;
+            font-size: 3rem;
+            font-weight: 800;
             margin-bottom: 0.5rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
             background: linear-gradient(45deg, #e74c3c, #f39c12, #e74c3c);
             background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             animation: gradientShift 3s ease-in-out infinite;
-        }}
+        }
         
-        .welcome-subtitle {{
+        .welcome-subtitle {
             text-align: center;
             color: #dedee4;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             margin-bottom: 2rem;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-        }}
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-weight: 300;
+        }
         
-        @keyframes gradientShift {{
-            0%, 100% {{ background-position: 0% 50%; }}
-            50% {{ background-position: 100% 50%; }}
-        }}
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
         
         /* Enhanced button styling */
-        .stButton>button {{
+        .stButton>button {
             border: 2px solid transparent;
             color: #fafafb;
             background: linear-gradient(45deg, #e74c3c, #c0392b);
-            transition: all 0.3s ease-in-out;
+            transition: all 0.4s ease-in-out;
             width: 100%;
-            height: 3rem;
-            border-radius: 15px;
-            font-weight: 600;
+            height: 3.5rem;
+            border-radius: 18px;
+            font-weight: 700;
             font-size: 1.1rem;
-            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }}
-        
-        .stButton>button:hover {{
-            transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stButton>button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .stButton>button:hover::before {
+            left: 100%;
+        }
+        
+        .stButton>button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.5);
             background: linear-gradient(45deg, #c0392b, #e74c3c);
-        }}
+        }
         
         /* Form styling */
-        .stTextInput > div > div > input {{
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            color: #fafafb;
-            padding: 0.75rem;
-        }}
-        
-        .stTextInput > div > div > input:focus {{
-            border-color: #e74c3c;
-            box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
-        }}
-        
-        /* Tab buttons styling */
-        .tab-button {{
+        .stTextInput > div > div > input {
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px 10px 0 0;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
             color: #fafafb;
             padding: 1rem;
-            margin: 0 0.25rem;
-            cursor: pointer;
+            font-size: 1rem;
             transition: all 0.3s ease;
-        }}
+        }
         
-        .tab-button.active {{
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-            border-bottom: 1px solid #e74c3c;
-        }}
+        .stTextInput > div > div > input:focus {
+            border-color: #e74c3c;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .stTextInput > div > div > input::placeholder {
+            color: rgba(250, 250, 251, 0.6);
+        }
     </style>
-    <div class="video-container">
-        <iframe
-            src="https://www.youtube.com/embed/{video_id}?autoplay=1&loop=1&mute=1&controls=0&playlist={video_id}&showinfo=0&autohide=1&modestbranding=1&rel=0"
-            frameborder="0"
-            allow="autoplay; encrypted-media"
-            allowfullscreen>
-        </iframe>
+    <div class="particles">
+        <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+        <div class="particle" style="left: 20%; animation-delay: 1s;"></div>
+        <div class="particle" style="left: 30%; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 40%; animation-delay: 3s;"></div>
+        <div class="particle" style="left: 50%; animation-delay: 4s;"></div>
+        <div class="particle" style="left: 60%; animation-delay: 5s;"></div>
+        <div class="particle" style="left: 70%; animation-delay: 6s;"></div>
+        <div class="particle" style="left: 80%; animation-delay: 1.5s;"></div>
+        <div class="particle" style="left: 90%; animation-delay: 2.5s;"></div>
     </div>
     """
-    st.markdown(video_html, unsafe_allow_html=True)
+    st.markdown(background_css, unsafe_allow_html=True)
 
 def get_main_app_css():
     """Returns enhanced CSS for the main application with improved styling."""
@@ -408,48 +453,59 @@ def create_enhanced_header():
 # --- Main Application Logic ---
 
 def login_page():
-    """Displays the enhanced login and sign-up page with video background."""
-    # Always inject video background when login page loads
+    """Displays the enhanced login and sign-up page with animated background."""
+    # Always inject animated background when login page loads
     inject_video_background()
     
     # Create centered login container
+    st.markdown('<br><br>', unsafe_allow_html=True)  # Add some top spacing
+    
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
         
         # Welcome header
-        st.markdown('<div class="welcome-title">AI Wellness Coach Pro</div>', unsafe_allow_html=True)
-        st.markdown('<div class="welcome-subtitle">Transform Your Health Journey</div>', unsafe_allow_html=True)
+        st.markdown('<div class="welcome-title">💪 AI Wellness Coach Pro</div>', unsafe_allow_html=True)
+        st.markdown('<div class="welcome-subtitle">✨ Transform Your Health Journey Today</div>', unsafe_allow_html=True)
         
-        # Tab-like navigation
+        # Tab-like navigation with enhanced styling
         if 'page' not in st.session_state:
             st.session_state.page = 'Login'
 
         col_login, col_signup = st.columns(2)
         with col_login:
-            if st.button("🔑 Login", use_container_width=True, key="login_tab"):
+            login_style = "🔑 Login" if st.session_state.page == 'Login' else "🔓 Login"
+            if st.button(login_style, use_container_width=True, key="login_tab"):
                 st.session_state.page = 'Login'
         with col_signup:
-            if st.button("🚀 Sign Up", use_container_width=True, key="signup_tab"):
+            signup_style = "🚀 Sign Up" if st.session_state.page == 'Sign Up' else "📝 Sign Up"
+            if st.button(signup_style, use_container_width=True, key="signup_tab"):
                 st.session_state.page = 'Sign Up'
         
-        st.divider()
+        st.markdown('<br>', unsafe_allow_html=True)
 
-        # Using a placeholder for user management
+        # Enhanced user management with demo accounts
         if 'user_db' not in st.session_state:
-            st.session_state.user_db = {"demo": "demo123", "admin": "admin123"} 
+            st.session_state.user_db = {
+                "demo": "demo123", 
+                "admin": "admin123",
+                "user": "password123"
+            } 
         
         if st.session_state.page == 'Login':
-            st.markdown("### 🔐 Welcome Back")
+            st.markdown("### 🔐 Welcome Back, Champion!")
+            st.markdown("Ready to continue your wellness journey?")
+            
             with st.form("login_form"):
                 username = st.text_input("👤 Username", placeholder="Enter your username")
                 password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
-                col_submit, col_demo = st.columns([2, 1])
+                
+                col_submit, col_demo = st.columns([3, 1])
                 with col_submit:
-                    submitted = st.form_submit_button("Login", use_container_width=True)
+                    submitted = st.form_submit_button("🚀 Login", use_container_width=True)
                 with col_demo:
-                    demo_login = st.form_submit_button("Demo", use_container_width=True)
+                    demo_login = st.form_submit_button("🎮 Demo", use_container_width=True)
                     
                 if demo_login:
                     username = "demo"
@@ -465,21 +521,33 @@ def login_page():
                             st.session_state.goal_weight = 75
                         if 'weight_log' not in st.session_state:
                             st.session_state.weight_log = []
-                        st.success("Login successful! Redirecting...")
-                        time.sleep(1)
+                        st.success("✅ Login successful! Welcome back!")
+                        time.sleep(1.5)
                         st.rerun()
                     else:
-                        st.error("❌ Invalid username or password")
+                        st.error("❌ Invalid credentials. Please try again.")
             
-            st.info("💡 **Demo Account:** Username: `demo` | Password: `demo123`")
+            # Demo account info with better styling
+            st.markdown("""
+                <div style="background: rgba(46, 204, 113, 0.1); padding: 1rem; border-radius: 10px; 
+                           border: 1px solid rgba(46, 204, 113, 0.3); margin-top: 1rem;">
+                    <h4 style="color: #2ecc71; margin: 0 0 0.5rem 0;">🎮 Try Demo Account</h4>
+                    <p style="margin: 0; color: #dedee4;">
+                        <strong>Username:</strong> demo<br>
+                        <strong>Password:</strong> demo123
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
 
         elif st.session_state.page == 'Sign Up':
-            st.markdown("### 🌟 Create Your Profile")
+            st.markdown("### 🌟 Join the Wellness Revolution!")
+            st.markdown("Create your account and start your transformation today.")
+            
             with st.form("signup_form"):
                 new_username = st.text_input("👤 Choose Username", placeholder="Enter desired username")
-                new_password = st.text_input("🔒 Choose Password", type="password", placeholder="Create a secure password")
+                new_password = st.text_input("🔒 Create Password", type="password", placeholder="Create a secure password")
                 confirm_password = st.text_input("🔒 Confirm Password", type="password", placeholder="Confirm your password")
-                submitted = st.form_submit_button("Create Account", use_container_width=True)
+                submitted = st.form_submit_button("🎯 Create Account", use_container_width=True)
                 
                 if submitted:
                     if not new_username or not new_password:
@@ -489,13 +557,26 @@ def login_page():
                     elif new_password != confirm_password:
                         st.error("❌ Passwords do not match!")
                     elif new_username in st.session_state.user_db:
-                        st.error("❌ Username already exists!")
+                        st.error("❌ Username already exists! Try a different one.")
                     else:
                         st.session_state.user_db[new_username] = new_password
-                        st.success(f"✅ Account created for '{new_username}'! Please login.")
+                        st.success(f"🎉 Welcome to the family, {new_username}! Please login to continue.")
                         st.session_state.page = 'Login'
+                        st.balloons()
                         time.sleep(2)
                         st.rerun()
+            
+            # Password requirements
+            st.markdown("""
+                <div style="background: rgba(52, 152, 219, 0.1); padding: 1rem; border-radius: 10px; 
+                           border: 1px solid rgba(52, 152, 219, 0.3); margin-top: 1rem;">
+                    <h4 style="color: #3498db; margin: 0 0 0.5rem 0;">🔒 Password Requirements</h4>
+                    <p style="margin: 0; color: #dedee4;">
+                        • At least 6 characters long<br>
+                        • Choose something memorable but secure
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -606,46 +687,53 @@ def main_app():
         if st.session_state.get('weight_log'):
             df = pd.DataFrame(st.session_state.weight_log)
             
-            # Enhanced chart
+            # Enhanced chart with proper data binding
             goal_df = pd.DataFrame({
                 'week': [df['week'].min(), df['week'].max()],
                 'weight': [st.session_state.goal_weight, st.session_state.goal_weight]
             })
 
-            base = alt.Chart().add_selection(
-                alt.selection_interval(bind='scales')
+            # Progress line chart
+            progress_chart = alt.Chart(df).mark_line(
+                point=alt.OverlayMarkDef(filled=True, size=100, color='#e74c3c'),
+                color='#e74c3c',
+                strokeWidth=4
+            ).encode(
+                x=alt.X('week:Q', title='Week', axis=alt.Axis(labelColor='#fafafb', titleColor='#fafafb')),
+                y=alt.Y('weight:Q', title='Weight (kg)', scale=alt.Scale(zero=False), axis=alt.Axis(labelColor='#fafafb', titleColor='#fafafb')),
+                tooltip=[
+                    alt.Tooltip('week:Q', title='Week'),
+                    alt.Tooltip('weight:Q', title='Weight (kg)')
+                ]
+            ).properties(
+                title=alt.TitleParams('Your Weight Progress Journey', fontSize=18, color='#fafafb', anchor='start'),
+                width=600,
+                height=300
             )
 
-            line = base.mark_line(
-                point=alt.OverlayMarkDef(filled=True, size=100),
-                color='#e74c3c',
+            # Goal line chart
+            goal_chart = alt.Chart(goal_df).mark_line(
+                strokeDash=[8,4], 
+                color='#f39c12',
                 strokeWidth=3
             ).encode(
-                x=alt.X('week:Q', title='Week'),
-                y=alt.Y('weight:Q', title='Weight (kg)', scale=alt.Scale(zero=False)),
-                tooltip=['week:Q', 'weight:Q']
-            ).properties(
-                title=alt.TitleParams('Weight Progress vs. Goal', fontSize=16, color='#fafafb')
+                x=alt.X('week:Q'),
+                y=alt.Y('weight:Q'),
+                tooltip=[alt.Tooltip(value='Goal Weight', title='Line')]
             )
 
-            goal_line = base.mark_line(
-                strokeDash=[5,5], 
-                color='#f39c12',
-                strokeWidth=2
-            ).encode(
-                x='week:Q',
-                y='weight:Q'
+            # Combine charts
+            combined_chart = (progress_chart + goal_chart).resolve_scale(
+                color='independent'
+            ).configure_view(
+                strokeWidth=0,
+                fill='rgba(21, 32, 42, 0.8)'
+            ).configure_axis(
+                grid=True,
+                gridColor='rgba(255, 255, 255, 0.1)'
             )
-
-            chart_data = df
-            goal_chart_data = goal_df
             
-            combined_chart = alt.layer(
-                line.data(chart_data),
-                goal_line.data(goal_chart_data)
-            ).resolve_scale(color='independent')
-            
-            st.altair_chart(combined_chart.interactive(), use_container_width=True)
+            st.altair_chart(combined_chart, use_container_width=True)
         else:
             st.info("📈 Log your weight to see your progress chart here!")
 
