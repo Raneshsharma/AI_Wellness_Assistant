@@ -430,14 +430,30 @@ def generate_wellness_plan(age, gender, height, weight, diet_preference, fitness
     - Age: {age}, Gender: {gender}, Height: {height} cm, Weight: {weight} kg
     - Preference: {diet_preference}, Goal: {fitness_goal}
 
-    **Your Task:**
-    Generate a comprehensive 7-day wellness plan tailored to their specific goals.
-    For each meal (Breakfast, Lunch, Dinner, Snack) and exercise, provide:
-    1. The name in bold (e.g., **Breakfast: Scrambled Eggs**).
-    2. Clear, actionable instructions with portion sizes and timing.
-    3. Nutritional highlights and benefits.
-    Do NOT include image prompts.
-    Make the plan realistic, achievable, and scientifically sound.
+    **CRITICAL REQUIREMENTS:**
+    
+    For the Diet Plan section:
+    - Provide at least 4 meals per day (Breakfast, Lunch, Snack, Dinner)
+    - Format: **Meal Name: Specific Dish**
+    - Follow with detailed preparation instructions and portion sizes
+    - Example: **Breakfast: Overnight Oats**
+    Mix 1/2 cup rolled oats with 1/2 cup almond milk, 1 tbsp chia seeds...
+    
+    For the Exercise Plan section:
+    - Provide at least 4-5 exercises per day
+    - Format: **Exercise Name: Specific Movement**
+    - Include sets, reps, duration, and form cues
+    - Example: **Cardio: Brisk Walking**
+    30 minutes at moderate pace, maintain good posture, swing arms naturally...
+    
+    **Warm-up: Dynamic Stretching**
+    5-10 minutes of arm circles, leg swings, and light movements...
+    
+    **Strength: Push-ups**
+    3 sets of 8-12 repetitions, keep body straight, lower chest to floor...
+    
+    Make the plan comprehensive, realistic, and scientifically sound.
+    Ensure both diet AND exercise sections are fully populated for each day.
     """
     return generate_api_call(prompt)
 
@@ -817,61 +833,152 @@ def main_app():
             
             with diet_tab:
                 st.markdown("### 🍽️ Today's Nutritious Meals")
+                
+                if not day_plan["diet"]:
+                    st.warning("No meals found in the diet plan. Please regenerate your plan.")
+                
                 for i, (name, instructions) in enumerate(day_plan["diet"]):
                     with st.container(border=True):
-                        st.markdown(f"**{name}**")
+                        # Meal header
+                        st.markdown(f"### {name}")
                         st.markdown(instructions.strip())
                         
+                        # Macros section - always show
+                        with st.expander("📊 Nutritional Macros", expanded=False):
+                            macro_col1, macro_col2 = st.columns(2)
+                            with macro_col1:
+                                with st.spinner("Calculating macros..."):
+                                    macro_prompt = f"""
+                                    Calculate the approximate macronutrients for this meal: {name} - {instructions[:150]}
+                                    
+                                    Provide the response in this exact format:
+                                    Calories: [number]
+                                    Protein: [number]g
+                                    Carbs: [number]g  
+                                    Fat: [number]g
+                                    Fiber: [number]g
+                                    """
+                                    macros = generate_api_call(macro_prompt)
+                                    if macros:
+                                        st.markdown(f"**Estimated Macros:**\n\n{macros}")
+                                    else:
+                                        st.info("Unable to calculate macros at this time.")
+                            
+                            with macro_col2:
+                                # Key nutrients
+                                nutrient_prompt = f"List the top 3 key nutrients and health benefits of: {name}"
+                                nutrients = generate_api_call(nutrient_prompt)
+                                if nutrients:
+                                    st.markdown(f"**Key Benefits:**\n\n{nutrients}")
+                        
+                        # Action buttons
                         btn_col1, btn_col2, btn_col3 = st.columns(3)
+                        
                         with btn_col1:
-                            query = f"healthy recipe {name.split(':')[-1].strip()}"
+                            # YouTube recipe button
+                            meal_name = name.split(':')[-1].strip()
+                            query = f"how to make {meal_name} healthy recipe"
                             yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-                            st.link_button("📺 Recipe Video", yt_url, use_container_width=True)
+                            st.link_button("🎥 Recipe Video", yt_url, use_container_width=True)
                         
                         with btn_col2:
+                            # Alternative meal
                             if st.button("🔄 Alternative", key=f"swap_diet_{selected_day_index}_{i}", use_container_width=True):
                                 with st.spinner("Finding alternatives..."):
-                                    alt_prompt = f"Suggest a healthy alternative to {name} with similar nutritional value for a {diet_preference} {fitness_goal.lower()} plan."
+                                    alt_prompt = f"Suggest a healthy alternative to {name} with similar nutritional value for a {diet_preference} {fitness_goal.lower()} plan. Include brief preparation instructions."
                                     alternative = generate_api_call(alt_prompt)
                                     if alternative:
-                                        st.success(f"💡 Alternative: {alternative}")
+                                        st.success(f"💡 **Alternative Meal:**\n\n{alternative}")
                         
                         with btn_col3:
-                            if st.button("📊 Nutrition", key=f"nutrition_{selected_day_index}_{i}", use_container_width=True):
-                                with st.spinner("Analyzing nutrition..."):
-                                    nutrition_prompt = f"Provide detailed nutritional information for: {name} - {instructions[:100]}..."
-                                    nutrition_info = generate_api_call(nutrition_prompt)
-                                    if nutrition_info:
-                                        st.info(nutrition_info)
+                            # Cooking tips
+                            if st.button("👨‍🍳 Cooking Tips", key=f"tips_diet_{selected_day_index}_{i}", use_container_width=True):
+                                with st.spinner("Getting cooking tips..."):
+                                    tips_prompt = f"Provide 3-4 practical cooking tips and techniques for preparing: {name}"
+                                    cooking_tips = generate_api_call(tips_prompt)
+                                    if cooking_tips:
+                                        st.info(f"**Cooking Tips:**\n\n{cooking_tips}")
             
             with exercise_tab:
                 st.markdown("### 💪 Today's Workout Routine")
+                
+                if not day_plan["exercise"] or len(day_plan["exercise"]) == 0:
+                    st.warning("⚠️ No exercises found in today's plan. Let me generate some for you!")
+                    
+                    # Generate exercises if none exist
+                    if st.button("🏋️ Generate Today's Exercises", use_container_width=True):
+                        with st.spinner("Creating your workout routine..."):
+                            exercise_prompt = f"""
+                            Create a detailed exercise plan for someone with these goals: {fitness_goal}.
+                            
+                            Format your response with exercise names in bold followed by instructions:
+                            **Warm-up: Light Stretching**
+                            5-10 minutes of light stretching focusing on major muscle groups.
+                            
+                            **Exercise 1: Push-ups**
+                            3 sets of 10-15 repetitions. Keep your body straight and lower yourself until your chest nearly touches the floor.
+                            
+                            Include 4-5 exercises with sets, reps, and proper form instructions.
+                            """
+                            new_exercises = generate_api_call(exercise_prompt)
+                            if new_exercises:
+                                # Parse the generated exercises
+                                exercise_matches = re.findall(r"\*\*\s*(.*?)\s*\*\*\s*\n(.*?)(?=\n\*\*|\Z)", new_exercises, re.DOTALL)
+                                if exercise_matches:
+                                    day_plan["exercise"] = exercise_matches
+                                    st.success("✅ Exercises generated! Check below:")
+                                    st.rerun()
+                
                 for i, (name, instructions) in enumerate(day_plan["exercise"]):
                     with st.container(border=True):
-                        st.markdown(f"**{name}**")
+                        st.markdown(f"### {name}")
                         st.markdown(instructions.strip())
                         
-                        btn_col1, btn_col2, btn_col3 = st.columns(3)
-                        with btn_col1:
-                            query = f"how to do {name.strip()} exercise tutorial"
-                            yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-                            st.link_button("🎥 Exercise Video", yt_url, use_container_width=True)
-                        
-                        with btn_col2:
-                            if st.button("🔄 Alternative", key=f"swap_exercise_{selected_day_index}_{i}", use_container_width=True):
-                                with st.spinner("Finding alternatives..."):
-                                    alt_prompt = f"Suggest an alternative exercise to {name} that targets similar muscle groups and fits a {fitness_goal.lower()} routine."
-                                    alternative = generate_api_call(alt_prompt)
-                                    if alternative:
-                                        st.success(f"💡 Alternative: {alternative}")
-                        
-                        with btn_col3:
-                            if st.button("📋 Form Tips", key=f"form_{selected_day_index}_{i}", use_container_width=True):
+                        # Exercise details in expandable section
+                        with st.expander("📋 Exercise Details & Form Tips", expanded=False):
+                            detail_col1, detail_col2 = st.columns(2)
+                            
+                            with detail_col1:
                                 with st.spinner("Getting form tips..."):
-                                    form_prompt = f"Provide proper form and technique tips for: {name}"
+                                    form_prompt = f"Provide proper form and safety tips for: {name}. Include common mistakes to avoid."
                                     form_tips = generate_api_call(form_prompt)
                                     if form_tips:
-                                        st.info(form_tips)
+                                        st.markdown(f"**Proper Form:**\n\n{form_tips}")
+                            
+                            with detail_col2:
+                                with st.spinner("Finding muscle groups..."):
+                                    muscle_prompt = f"What muscle groups does {name} target? List primary and secondary muscles worked."
+                                    muscles = generate_api_call(muscle_prompt)
+                                    if muscles:
+                                        st.markdown(f"**Muscles Targeted:**\n\n{muscles}")
+                        
+                        # Action buttons
+                        btn_col1, btn_col2, btn_col3 = st.columns(3)
+                        
+                        with btn_col1:
+                            # YouTube tutorial
+                            exercise_name = name.split(':')[-1].strip()
+                            query = f"how to do {exercise_name} proper form tutorial"
+                            yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
+                            st.link_button("🎥 Exercise Tutorial", yt_url, use_container_width=True)
+                        
+                        with btn_col2:
+                            # Alternative exercise
+                            if st.button("🔄 Alternative", key=f"swap_exercise_{selected_day_index}_{i}", use_container_width=True):
+                                with st.spinner("Finding alternatives..."):
+                                    alt_prompt = f"Suggest an alternative exercise to {name} that targets similar muscle groups and fits a {fitness_goal.lower()} routine. Include sets and reps."
+                                    alternative = generate_api_call(alt_prompt)
+                                    if alternative:
+                                        st.success(f"💡 **Alternative Exercise:**\n\n{alternative}")
+                        
+                        with btn_col3:
+                            # Modification options
+                            if st.button("⚙️ Modifications", key=f"mod_exercise_{selected_day_index}_{i}", use_container_width=True):
+                                with st.spinner("Finding modifications..."):
+                                    mod_prompt = f"Provide beginner and advanced modifications for: {name}"
+                                    modifications = generate_api_call(mod_prompt)
+                                    if modifications:
+                                        st.info(f"**Exercise Modifications:**\n\n{modifications}")
             
             # Enhanced disclaimer
             st.warning(f"⚠️ **Important Disclaimer:** {day_plan['disclaimer']}", icon="⚠️")
