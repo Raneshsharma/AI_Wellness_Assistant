@@ -8,9 +8,10 @@ import altair as alt
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="AI Wellness Coach",
+    page_title="AI Wellness Coach Pro",
     page_icon="💪",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # --- Helper Functions ---
@@ -24,13 +25,20 @@ def inject_video_background():
     video_id = "XMwzUDoBuIY"  # Extracted from your link
     video_html = f"""
     <style>
+        /* Hide Streamlit elements for cleaner look */
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        header {{visibility: hidden;}}
+        
         /* Make the main app container transparent over the video */
         [data-testid="stAppViewContainer"] > .main {{
             background: none;
+            padding-top: 2rem;
         }}
         [data-testid="stHeader"] {{
             background-color: rgba(0,0,0,0);
         }}
+        
         /* Container to hold the video and ensure it covers the screen */
         .video-container {{
             position: fixed;
@@ -41,6 +49,7 @@ def inject_video_background():
             overflow: hidden;
             z-index: -100;
         }}
+        
         /* Style the iframe to cover the container, maintaining aspect ratio */
         .video-container iframe {{
             position: absolute;
@@ -51,24 +60,105 @@ def inject_video_background():
             min-height: 100vh;
             min-width: 177.77vh; /* 16:9 Aspect Ratio */
             transform: translate(-50%, -50%);
-            filter: brightness(0.4); /* Dim the video */
+            filter: brightness(0.3) contrast(1.2); /* Dim and enhance contrast */
         }}
-        /* Style the login form elements on top of the video */
-        .stButton>button {{
-            border: 2px solid #fafafb;
+        
+        /* Enhanced login container styling */
+        .login-container {{
+            background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(21, 32, 42, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 500px;
+        }}
+        
+        /* Welcome text styling */
+        .welcome-title {{
+            text-align: center;
             color: #fafafb;
-            background-color: rgba(0,0,0,0.5);
-            transition: all 0.2s ease-in-out;
-            width: 100%;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: linear-gradient(45deg, #e74c3c, #f39c12, #e74c3c);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 3s ease-in-out infinite;
         }}
+        
+        .welcome-subtitle {{
+            text-align: center;
+            color: #dedee4;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }}
+        
+        @keyframes gradientShift {{
+            0%, 100% {{ background-position: 0% 50%; }}
+            50% {{ background-position: 100% 50%; }}
+        }}
+        
+        /* Enhanced button styling */
+        .stButton>button {{
+            border: 2px solid transparent;
+            color: #fafafb;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            transition: all 0.3s ease-in-out;
+            width: 100%;
+            height: 3rem;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }}
+        
         .stButton>button:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+        }}
+        
+        /* Form styling */
+        .stTextInput > div > div > input {{
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: #fafafb;
+            padding: 0.75rem;
+        }}
+        
+        .stTextInput > div > div > input:focus {{
             border-color: #e74c3c;
-            color: #e74c3c;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+        }}
+        
+        /* Tab buttons styling */
+        .tab-button {{
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px 10px 0 0;
+            color: #fafafb;
+            padding: 1rem;
+            margin: 0 0.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }}
+        
+        .tab-button.active {{
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            border-bottom: 1px solid #e74c3c;
         }}
     </style>
     <div class="video-container">
         <iframe
-            src="https://www.youtube.com/embed/{video_id}?autoplay=1&loop=1&mute=1&controls=0&playlist={video_id}&showinfo=0&autohide=1&modestbranding=1"
+            src="https://www.youtube.com/embed/{video_id}?autoplay=1&loop=1&mute=1&controls=0&playlist={video_id}&showinfo=0&autohide=1&modestbranding=1&rel=0"
             frameborder="0"
             allow="autoplay; encrypted-media"
             allowfullscreen>
@@ -77,16 +167,21 @@ def inject_video_background():
     """
     st.markdown(video_html, unsafe_allow_html=True)
 
-
 def get_main_app_css():
-    """Returns CSS for the main application with the animated dark theme."""
+    """Returns enhanced CSS for the main application with improved styling."""
     return """
-    /* Main animated background using Background palette */
+    /* Hide default Streamlit elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Main animated background using improved palette */
     [data-testid="stAppViewContainer"] {
-        background-image: linear-gradient(-45deg, #040608, #15202a, #0d1319);
-        animation: gradient 15s ease infinite;
+        background: linear-gradient(-45deg, #0f1419, #1a252f, #15202a, #0d1117);
+        animation: gradient 20s ease infinite;
         background-size: 400% 400%;
-        color: #fafafb; /* Use Text-100 for default text */
+        color: #fafafb;
+        min-height: 100vh;
     }
 
     @keyframes gradient {
@@ -95,30 +190,145 @@ def get_main_app_css():
         100% {background-position: 0% 50%;}
     }
 
-    h1, h2, h3, h4, h5, h6 { color: #fafafb; }
-    [data-testid="stSidebar"] { background-color: rgba(21, 32, 42, 0.7); }
-    [data-testid="stChatMessage"] { background-color: rgba(21, 32, 42, 0.8); }
-    [data-testid="stMetricLabel"] { color: #dedee4; }
-    .stButton>button {
-        border: 1px solid #fafafb;
-        color: #fafafb;
-        background-color: transparent;
-        transition: all 0.2s ease-in-out;
+    /* Typography improvements */
+    h1, h2, h3, h4, h5, h6 { 
+        color: #fafafb; 
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     }
-    .stButton>button:hover {
-        border: 1px solid #e74c3c;
-        color: #e74c3c;
-        background-color: rgba(231, 76, 60, 0.1);
+    
+    h1 {
+        background: linear-gradient(45deg, #e74c3c, #f39c12);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
     }
-    .stTabs [aria-selected="true"] {
-        background-color: #e74c3c;
-        color: #fafafb;
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] { 
+        background: linear-gradient(180deg, rgba(21, 32, 42, 0.9) 0%, rgba(15, 20, 25, 0.9) 100%);
+        backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(231, 76, 60, 0.3);
     }
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: rgba(21, 32, 42, 0.5);
-        border-radius: 0.5rem;
-        padding: 1.5rem;
+    
+    /* Chat message styling */
+    [data-testid="stChatMessage"] { 
+        background: rgba(21, 32, 42, 0.8);
+        border-radius: 15px;
         border: 1px solid rgba(62, 88, 113, 0.3);
+        backdrop-filter: blur(5px);
+    }
+    
+    /* Metrics styling */
+    [data-testid="stMetricLabel"] { color: #dedee4; }
+    [data-testid="stMetricValue"] { 
+        color: #e74c3c; 
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    
+    /* Enhanced button styling */
+    .stButton>button {
+        border: 2px solid transparent;
+        color: #fafafb;
+        background: linear-gradient(45deg, #e74c3c, #c0392b);
+        transition: all 0.3s ease-in-out;
+        border-radius: 10px;
+        font-weight: 600;
+        height: 2.8rem;
+        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2);
+    }
+    
+    .stButton>button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        background: linear-gradient(45deg, #c0392b, #e74c3c);
+    }
+    
+    /* Tab styling */
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(45deg, #e74c3c, #c0392b);
+        color: #fafafb;
+        border-radius: 10px 10px 0 0;
+        font-weight: 600;
+    }
+    
+    .stTabs [aria-selected="false"] {
+        background: rgba(255, 255, 255, 0.1);
+        color: #dedee4;
+        border-radius: 10px 10px 0 0;
+    }
+    
+    /* Container styling */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: linear-gradient(135deg, rgba(21, 32, 42, 0.8) 0%, rgba(15, 20, 25, 0.8) 100%);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 2rem;
+        border: 1px solid rgba(62, 88, 113, 0.4);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    [data-testid="stVerticalBlockBorderWrapper"]:hover {
+        border-color: rgba(231, 76, 60, 0.5);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    }
+    
+    /* Input styling */
+    .stSlider > div > div > div {
+        background-color: rgba(231, 76, 60, 0.3);
+    }
+    
+    .stSelectbox > div > div {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Link button styling */
+    .stLinkButton > a {
+        background: linear-gradient(45deg, #3498db, #2980b9);
+        color: white;
+        text-decoration: none;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+    }
+    
+    .stLinkButton > a:hover {
+        background: linear-gradient(45deg, #2980b9, #3498db);
+        transform: translateY(-1px);
+    }
+    
+    /* Chart styling */
+    .vega-embed {
+        background: rgba(21, 32, 42, 0.8);
+        border-radius: 15px;
+        padding: 1rem;
+        border: 1px solid rgba(62, 88, 113, 0.3);
+    }
+    
+    /* Warning/Info styling */
+    .stAlert {
+        background: rgba(231, 76, 60, 0.1);
+        border: 1px solid rgba(231, 76, 60, 0.3);
+        border-radius: 10px;
+    }
+    
+    /* Success message styling */
+    .stSuccess {
+        background: rgba(46, 204, 113, 0.1);
+        border: 1px solid rgba(46, 204, 113, 0.3);
+        border-radius: 10px;
+    }
+    
+    /* Loading spinner */
+    .stSpinner {
+        color: #e74c3c;
     }
     """
 
@@ -143,14 +353,13 @@ def parse_weekly_plan(plan_text):
         parsed_plan.append(day_plan)
     return parsed_plan
 
-
 def generate_api_call(prompt, model="gpt-4o"):
     """Generic function to call the OpenAI API for non-streaming responses."""
     try:
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "You are an expert wellness coach."},
+                {"role": "system", "content": "You are an expert wellness coach with extensive knowledge in nutrition, fitness, and mental health."},
                 {"role": "user", "content": prompt}
             ]
         )
@@ -177,282 +386,533 @@ def generate_wellness_plan(age, gender, height, weight, diet_preference, fitness
     - Preference: {diet_preference}, Goal: {fitness_goal}
 
     **Your Task:**
-    Generate a comprehensive 7-day wellness plan.
+    Generate a comprehensive 7-day wellness plan tailored to their specific goals.
     For each meal (Breakfast, Lunch, Dinner, Snack) and exercise, provide:
     1. The name in bold (e.g., **Breakfast: Scrambled Eggs**).
-    2. Clear and concise instructions.
+    2. Clear, actionable instructions with portion sizes and timing.
+    3. Nutritional highlights and benefits.
     Do NOT include image prompts.
+    Make the plan realistic, achievable, and scientifically sound.
     """
     return generate_api_call(prompt)
-    
+
+def create_enhanced_header():
+    """Creates an enhanced header with gradient text and icons."""
+    st.markdown("""
+        <div style="text-align: center; padding: 1rem 0;">
+            <h1 style="font-size: 3rem; margin-bottom: 0.5rem;">💪 AI Wellness Coach Pro</h1>
+            <p style="font-size: 1.2rem; color: #dedee4; margin: 0;">Your Personal Journey to Better Health</p>
+        </div>
+    """, unsafe_allow_html=True)
+
 # --- Main Application Logic ---
 
 def login_page():
-    """Displays the login and sign-up page."""
+    """Displays the enhanced login and sign-up page with video background."""
+    # Always inject video background when login page loads
     inject_video_background()
-    st.title("Welcome to AI Wellness Coach Pro 💪")
     
-    if 'page' not in st.session_state:
-        st.session_state.page = 'Login'
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Login"):
-            st.session_state.page = 'Login'
+    # Create centered login container
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
     with col2:
-        if st.button("Sign Up"):
-            st.session_state.page = 'Sign Up'
-    
-    st.divider()
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        
+        # Welcome header
+        st.markdown('<div class="welcome-title">AI Wellness Coach Pro</div>', unsafe_allow_html=True)
+        st.markdown('<div class="welcome-subtitle">Transform Your Health Journey</div>', unsafe_allow_html=True)
+        
+        # Tab-like navigation
+        if 'page' not in st.session_state:
+            st.session_state.page = 'Login'
 
-    # Using a placeholder for user management. In a real app, this would be a database.
-    if 'user_db' not in st.session_state:
-        st.session_state.user_db = {"user": "123"} 
-    
-    if st.session_state.page == 'Login':
-        st.header("Login")
-        with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submitted = st.form_submit_button("Login")
-            if submitted:
-                if username in st.session_state.user_db and st.session_state.user_db[username] == password:
-                    st.session_state.logged_in = True
-                    st.session_state.username = username
-                    # Initialize user-specific data
-                    if 'goal_weight' not in st.session_state:
-                        st.session_state.goal_weight = 75
-                    if 'weight_log' not in st.session_state:
-                        st.session_state.weight_log = []
-                    st.rerun()
-                else:
-                    st.error("Invalid username or password")
-
-    elif st.session_state.page == 'Sign Up':
-        st.header("Create Your Profile")
-        with st.form("signup_form"):
-            new_username = st.text_input("Choose a Username")
-            new_password = st.text_input("Choose a Password", type="password")
-            confirm_password = st.text_input("Confirm Password", type="password")
-            submitted = st.form_submit_button("Sign Up")
-            if submitted:
-                if new_password != confirm_password:
-                    st.error("Passwords do not match!")
-                elif new_username in st.session_state.user_db:
-                    st.error("Username already exists!")
-                elif not new_username or not new_password:
-                    st.error("Please fill out all fields.")
-                else:
-                    st.session_state.user_db[new_username] = new_password
-                    st.success(f"Profile for '{new_username}' created successfully! Please go to the Login page.")
-                    st.session_state.page = 'Login'
-                    time.sleep(2)
-                    st.rerun()
-
-def main_app():
-    """The main application interface, shown after successful login."""
-    apply_css(get_main_app_css())
-
-    # Sidebar for plan generation and logout
-    with st.sidebar:
-        st.header(f"Welcome, {st.session_state.username}!")
-        if st.button("Logout", use_container_width=True):
-            for key in list(st.session_state.keys()):
-                if key not in ['user_db']: # Keep user database
-                    del st.session_state[key]
-            st.rerun()
+        col_login, col_signup = st.columns(2)
+        with col_login:
+            if st.button("🔑 Login", use_container_width=True, key="login_tab"):
+                st.session_state.page = 'Login'
+        with col_signup:
+            if st.button("🚀 Sign Up", use_container_width=True, key="signup_tab"):
+                st.session_state.page = 'Sign Up'
+        
         st.divider()
 
-        st.header("👤 Your Details")
-        age = st.slider("Age", 16, 100, 25)
-        gender = st.selectbox("Gender", ("Male", "Female"))
-        height = st.slider("Height (cm)", 100, 250, 170)
-        weight = st.slider("Weight (kg)", 30, 200, 70)
-        st.header("🥗 Your Preferences")
-        diet_preference = st.selectbox("Dietary Preference", ("No Preference", "Vegetarian", "Vegan", "Keto"))
-        fitness_goal = st.selectbox("Primary Fitness Goal", ("Lose Weight", "Gain Muscle", "Maintain Weight", "Improve Endurance"))
-        submit_button = st.button(label='✨ Generate My 7-Day Plan!', use_container_width=True)
+        # Using a placeholder for user management
+        if 'user_db' not in st.session_state:
+            st.session_state.user_db = {"demo": "demo123", "admin": "admin123"} 
+        
+        if st.session_state.page == 'Login':
+            st.markdown("### 🔐 Welcome Back")
+            with st.form("login_form"):
+                username = st.text_input("👤 Username", placeholder="Enter your username")
+                password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
+                col_submit, col_demo = st.columns([2, 1])
+                with col_submit:
+                    submitted = st.form_submit_button("Login", use_container_width=True)
+                with col_demo:
+                    demo_login = st.form_submit_button("Demo", use_container_width=True)
+                    
+                if demo_login:
+                    username = "demo"
+                    password = "demo123"
+                    submitted = True
+                    
+                if submitted:
+                    if username in st.session_state.user_db and st.session_state.user_db[username] == password:
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
+                        # Initialize user-specific data
+                        if 'goal_weight' not in st.session_state:
+                            st.session_state.goal_weight = 75
+                        if 'weight_log' not in st.session_state:
+                            st.session_state.weight_log = []
+                        st.success("Login successful! Redirecting...")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid username or password")
+            
+            st.info("💡 **Demo Account:** Username: `demo` | Password: `demo123`")
 
-    st.title("AI Wellness Coach Pro 💪")
+        elif st.session_state.page == 'Sign Up':
+            st.markdown("### 🌟 Create Your Profile")
+            with st.form("signup_form"):
+                new_username = st.text_input("👤 Choose Username", placeholder="Enter desired username")
+                new_password = st.text_input("🔒 Choose Password", type="password", placeholder="Create a secure password")
+                confirm_password = st.text_input("🔒 Confirm Password", type="password", placeholder="Confirm your password")
+                submitted = st.form_submit_button("Create Account", use_container_width=True)
+                
+                if submitted:
+                    if not new_username or not new_password:
+                        st.error("❌ Please fill out all fields.")
+                    elif len(new_password) < 6:
+                        st.error("❌ Password must be at least 6 characters long.")
+                    elif new_password != confirm_password:
+                        st.error("❌ Passwords do not match!")
+                    elif new_username in st.session_state.user_db:
+                        st.error("❌ Username already exists!")
+                    else:
+                        st.session_state.user_db[new_username] = new_password
+                        st.success(f"✅ Account created for '{new_username}'! Please login.")
+                        st.session_state.page = 'Login'
+                        time.sleep(2)
+                        st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # Main Tabs for App Features
+def main_app():
+    """The enhanced main application interface."""
+    apply_css(get_main_app_css())
+
+    # Enhanced sidebar
+    with st.sidebar:
+        st.markdown(f"""
+            <div style="text-align: center; padding: 1rem; background: linear-gradient(45deg, #e74c3c, #c0392b); 
+                        border-radius: 15px; margin-bottom: 1rem;">
+                <h2 style="color: white; margin: 0;">👋 Welcome</h2>
+                <h3 style="color: #fafafb; margin: 0;">{st.session_state.username}!</h3>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚪 Logout", use_container_width=True):
+            for key in list(st.session_state.keys()):
+                if key not in ['user_db']: 
+                    del st.session_state[key]
+            st.rerun()
+        
+        st.divider()
+
+        # Enhanced user details section
+        st.markdown("### 👤 Your Details")
+        age = st.slider("🎂 Age", 16, 100, 25, help="Your current age")
+        gender = st.selectbox("⚧ Gender", ("Male", "Female", "Other"))
+        height = st.slider("📏 Height (cm)", 100, 250, 170, help="Your height in centimeters")
+        weight = st.slider("⚖️ Weight (kg)", 30, 200, 70, help="Your current weight in kilograms")
+        
+        st.markdown("### 🎯 Your Preferences")
+        diet_preference = st.selectbox("🥗 Dietary Preference", 
+                                     ("No Preference", "Vegetarian", "Vegan", "Keto", "Paleo", "Mediterranean"))
+        fitness_goal = st.selectbox("🏆 Primary Fitness Goal", 
+                                   ("Lose Weight", "Gain Muscle", "Maintain Weight", "Improve Endurance", "General Wellness"))
+        
+        st.divider()
+        
+        # Enhanced generate button
+        submit_button = st.button(
+            label='✨ Generate My 7-Day Plan!', 
+            use_container_width=True,
+            help="Click to generate your personalized wellness plan"
+        )
+
+    # Enhanced main header
+    create_enhanced_header()
+
+    # Main Tabs with enhanced styling
     profile_tab, plan_tab, chat_tab = st.tabs(["📊 Profile & Progress", "📅 Plan Generator", "💬 AI Health Chat"])
 
-    # --- Profile & Progress Tab ---
+    # --- Enhanced Profile & Progress Tab ---
     with profile_tab:
-        st.header(f"Your Wellness Dashboard, {st.session_state.username}")
+        st.markdown(f"## 📈 Your Wellness Dashboard")
+        
+        # Stats overview
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            bmi = weight / ((height/100) ** 2)
+            st.metric("BMI", f"{bmi:.1f}", help="Body Mass Index")
+        with col2:
+            plans_generated = len(st.session_state.get('weight_log', []))
+            st.metric("Plans Generated", plans_generated)
+        with col3:
+            st.metric("Current Weight", f"{weight} kg")
+        with col4:
+            goal_weight = st.session_state.get('goal_weight', 75)
+            diff = weight - goal_weight
+            st.metric("Weight to Goal", f"{diff:+.1f} kg")
+        
+        st.divider()
         
         prof_col1, prof_col2 = st.columns(2)
         with prof_col1:
             with st.container(border=True):
-                st.subheader("🎯 Set Your Goal")
-                st.session_state.goal_weight = st.number_input("Goal Weight (kg)", min_value=30, max_value=200, value=st.session_state.get('goal_weight', 75))
+                st.markdown("### 🎯 Set Your Goal")
+                st.session_state.goal_weight = st.number_input(
+                    "Goal Weight (kg)", 
+                    min_value=30, 
+                    max_value=200, 
+                    value=st.session_state.get('goal_weight', 75),
+                    help="Set your target weight"
+                )
 
         with prof_col2:
             with st.container(border=True):
-                st.subheader("✍️ Log Your Progress")
-                current_weight = st.number_input("Today's Weight (kg)", min_value=30, max_value=200, value=weight)
-                if st.button("Log Weight", use_container_width=True):
-                    week_num = len(st.session_state.weight_log) + 1
+                st.markdown("### ✍️ Log Your Progress")
+                current_weight = st.number_input(
+                    "Today's Weight (kg)", 
+                    min_value=30, 
+                    max_value=200, 
+                    value=weight,
+                    help="Enter your current weight"
+                )
+                if st.button("📝 Log Weight", use_container_width=True):
+                    week_num = len(st.session_state.get('weight_log', [])) + 1
+                    if 'weight_log' not in st.session_state:
+                        st.session_state.weight_log = []
                     st.session_state.weight_log.append({"week": week_num, "weight": current_weight})
-                    st.success(f"Logged {current_weight}kg for Week {week_num}!")
+                    st.success(f"✅ Logged {current_weight}kg for Week {week_num}!")
+                    st.balloons()
 
         st.divider()
-        st.subheader("📈 Your Journey So Far")
-        if st.session_state.weight_log:
+        st.markdown("### 📊 Your Journey Visualization")
+        
+        if st.session_state.get('weight_log'):
             df = pd.DataFrame(st.session_state.weight_log)
             
-            # Create a dataframe for the goal line
+            # Enhanced chart
             goal_df = pd.DataFrame({
                 'week': [df['week'].min(), df['week'].max()],
                 'weight': [st.session_state.goal_weight, st.session_state.goal_weight]
             })
 
-            # User's progress line
-            line = alt.Chart(df).mark_line(point=True, color='#e74c3c').encode(
-                x=alt.X('week:Q', title='Week'),
-                y=alt.Y('weight:Q', title='Weight (kg)', scale=alt.Scale(zero=False)),
-                tooltip=['week', 'weight']
-            ).properties(
-                title='Weight Progress vs. Goal'
+            base = alt.Chart().add_selection(
+                alt.selection_interval(bind='scales')
             )
 
-            # Goal line
-            goal_line = alt.Chart(goal_df).mark_line(strokeDash=[5,5], color='#fafafb').encode(
+            line = base.mark_line(
+                point=alt.OverlayMarkDef(filled=True, size=100),
+                color='#e74c3c',
+                strokeWidth=3
+            ).encode(
+                x=alt.X('week:Q', title='Week'),
+                y=alt.Y('weight:Q', title='Weight (kg)', scale=alt.Scale(zero=False)),
+                tooltip=['week:Q', 'weight:Q']
+            ).properties(
+                title=alt.TitleParams('Weight Progress vs. Goal', fontSize=16, color='#fafafb')
+            )
+
+            goal_line = base.mark_line(
+                strokeDash=[5,5], 
+                color='#f39c12',
+                strokeWidth=2
+            ).encode(
                 x='week:Q',
                 y='weight:Q'
             )
 
-            st.altair_chart((line + goal_line).interactive(), use_container_width=True)
+            chart_data = df
+            goal_chart_data = goal_df
+            
+            combined_chart = alt.layer(
+                line.data(chart_data),
+                goal_line.data(goal_chart_data)
+            ).resolve_scale(color='independent')
+            
+            st.altair_chart(combined_chart.interactive(), use_container_width=True)
         else:
-            st.info("Log your weight to see your progress chart here!")
+            st.info("📈 Log your weight to see your progress chart here!")
 
-
-    # --- Plan Generator Tab ---
+    # --- Enhanced Plan Generator Tab ---
     with plan_tab:
-        st.header("Your Personalized 7-Day Plan")
-        st.markdown("Your details are pre-filled from the sidebar. Click the button to generate your unique wellness guide!")
+        st.markdown("## 📅 Your Personalized Wellness Plan")
+        st.info("💡 Your details are pre-filled from the sidebar. Click the generate button to create your unique 7-day wellness guide!")
 
         if "plan_generated" not in st.session_state:
             st.session_state.plan_generated = False
 
         if submit_button:
-            with st.spinner("Your AI coach is crafting the perfect 7-day plan... This will be quick!"):
+            with st.spinner("🤖 Your AI coach is crafting the perfect 7-day plan... This may take a moment!"):
+                progress_bar = st.progress(0)
+                for i in range(100):
+                    time.sleep(0.01)
+                    progress_bar.progress(i + 1)
+                
                 full_plan = generate_wellness_plan(age, gender, height, weight, diet_preference, fitness_goal)
                 if full_plan:
                     st.session_state.weekly_plan = parse_weekly_plan(full_plan)
                     st.session_state.plan_generated = True
                     st.session_state.shopping_list = None
+                    st.success("✅ Your personalized plan is ready!")
+                    st.balloons()
                 else:
+                    st.error("❌ Failed to generate plan. Please try again.")
                     st.session_state.plan_generated = False
 
         if st.session_state.plan_generated and "weekly_plan" in st.session_state:
-            # Plan Display Logic (copied from previous version)
             weekly_plan = st.session_state.weekly_plan
+            
+            # Enhanced day selector and shopping list
             col1, col2 = st.columns([3,1])
             with col1:
-                day_options = [f"Day {i+1}" for i in range(len(weekly_plan))]
-                selected_day_str = st.selectbox("Select a day to view:", day_options, label_visibility="collapsed", key="day_selector")
+                day_options = [f"📅 Day {i+1}" for i in range(len(weekly_plan))]
+                selected_day_str = st.selectbox(
+                    "Select a day to view:", 
+                    day_options, 
+                    label_visibility="collapsed", 
+                    key="day_selector"
+                )
             with col2:
                 if st.button("🛒 Generate Shopping List", use_container_width=True):
-                    diet_plan_text = "\n".join([f"Day {i+1}:\n" + "\n".join([item[1] for item in day['diet']]) for i, day in enumerate(weekly_plan)])
-                    with st.spinner("Analyzing your diet plan..."):
-                        prompt = f"Based on the following 7-day diet plan, create a consolidated shopping list organized by category (e.g., Produce, Protein, Pantry, Dairy):\n\n{diet_plan_text}"
+                    diet_plan_text = "\n".join([
+                        f"Day {i+1}:\n" + "\n".join([item[1] for item in day['diet']]) 
+                        for i, day in enumerate(weekly_plan)
+                    ])
+                    with st.spinner("📝 Analyzing your diet plan..."):
+                        prompt = f"""Based on the following 7-day diet plan, create a comprehensive shopping list 
+                        organized by category (Produce, Protein, Dairy, Pantry, Frozen, etc.). 
+                        Include quantities and prioritize fresh, healthy ingredients:\n\n{diet_plan_text}"""
                         st.session_state.shopping_list = generate_api_call(prompt)
 
             if st.session_state.get("shopping_list"):
-                with st.expander("Your Consolidated Shopping List", expanded=True):
+                with st.expander("🛒 Your Consolidated Shopping List", expanded=True):
                     st.markdown(st.session_state.shopping_list)
 
-            selected_day_index = day_options.index(selected_day_str)
+            selected_day_index = int(selected_day_str.split()[1]) - 1
             day_plan = weekly_plan[selected_day_index]
             
-            st.header(f"Dashboard for Day {selected_day_index + 1}")
-            dash_col1, dash_col2 = st.columns(2)
+            # Enhanced day dashboard
+            st.markdown(f"## 📊 Dashboard for Day {selected_day_index + 1}")
+            
+            dash_col1, dash_col2, dash_col3 = st.columns(3)
             with dash_col1:
                 with st.container(border=True):
-                    st.subheader("🎯 Daily Calorie Target")
-                    st.metric(label="Estimated Calories", value=re.search(r'\d[\d,]*', day_plan["calories"]).group(0) if re.search(r'\d[\d,]*', day_plan["calories"]) else "N/A")
+                    st.markdown("### 🎯 Daily Calories")
+                    calorie_match = re.search(r'\d[\d,]*', day_plan["calories"])
+                    calories = calorie_match.group(0) if calorie_match else "N/A"
+                    st.metric("Target Calories", calories)
+            
             with dash_col2:
                 with st.container(border=True):
-                    st.subheader("💡 Motivational Tip")
-                    st.write(day_plan['motivation'])
+                    st.markdown("### 🏃‍♂️ Exercises")
+                    exercise_count = len(day_plan["exercise"])
+                    st.metric("Total Exercises", exercise_count)
+            
+            with dash_col3:
+                with st.container(border=True):
+                    st.markdown("### 🍽️ Meals")
+                    meal_count = len(day_plan["diet"])
+                    st.metric("Total Meals", meal_count)
+            
+            # Motivational tip
+            with st.container(border=True):
+                st.markdown("### 💡 Today's Motivation")
+                st.info(day_plan['motivation'])
             
             st.divider()
+            
+            # Enhanced tabs for diet and exercise
             diet_tab, exercise_tab = st.tabs(["🍎 Diet Plan", "🏋️ Exercise Plan"])
-            # ... (rest of the diet/exercise display logic remains the same)
+            
             with diet_tab:
-                st.subheader("Today's Meals")
+                st.markdown("### 🍽️ Today's Nutritious Meals")
                 for i, (name, instructions) in enumerate(day_plan["diet"]):
                     with st.container(border=True):
                         st.markdown(f"**{name}**")
                         st.markdown(instructions.strip())
-                        btn_col1, btn_col2 = st.columns(2)
+                        
+                        btn_col1, btn_col2, btn_col3 = st.columns(3)
                         with btn_col1:
-                            query = f"how to make {name.split(':')[-1].strip()}"
+                            query = f"healthy recipe {name.split(':')[-1].strip()}"
                             yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-                            st.link_button("▶️ Find Recipe on YouTube", yt_url, use_container_width=True)
+                            st.link_button("📺 Recipe Video", yt_url, use_container_width=True)
+                        
                         with btn_col2:
-                            if st.button("🔄 Suggest Alternative", key=f"swap_diet_{selected_day_index}_{i}", use_container_width=True):
-                                # Swap logic here...
-                                pass
+                            if st.button("🔄 Alternative", key=f"swap_diet_{selected_day_index}_{i}", use_container_width=True):
+                                with st.spinner("Finding alternatives..."):
+                                    alt_prompt = f"Suggest a healthy alternative to {name} with similar nutritional value for a {diet_preference} {fitness_goal.lower()} plan."
+                                    alternative = generate_api_call(alt_prompt)
+                                    if alternative:
+                                        st.success(f"💡 Alternative: {alternative}")
+                        
+                        with btn_col3:
+                            if st.button("📊 Nutrition", key=f"nutrition_{selected_day_index}_{i}", use_container_width=True):
+                                with st.spinner("Analyzing nutrition..."):
+                                    nutrition_prompt = f"Provide detailed nutritional information for: {name} - {instructions[:100]}..."
+                                    nutrition_info = generate_api_call(nutrition_prompt)
+                                    if nutrition_info:
+                                        st.info(nutrition_info)
+            
             with exercise_tab:
-                st.subheader("Today's Workout")
+                st.markdown("### 💪 Today's Workout Routine")
                 for i, (name, instructions) in enumerate(day_plan["exercise"]):
                     with st.container(border=True):
                         st.markdown(f"**{name}**")
                         st.markdown(instructions.strip())
-                        btn_col1, btn_col2 = st.columns(2)
+                        
+                        btn_col1, btn_col2, btn_col3 = st.columns(3)
                         with btn_col1:
-                            query = f"how to do {name.strip()}"
+                            query = f"how to do {name.strip()} exercise tutorial"
                             yt_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-                            st.link_button("▶️ Watch Tutorial on YouTube", yt_url, use_container_width=True)
+                            st.link_button("🎥 Exercise Video", yt_url, use_container_width=True)
+                        
                         with btn_col2:
-                            if st.button("🔄 Suggest Alternative", key=f"swap_exercise_{selected_day_index}_{i}", use_container_width=True):
-                                # Swap logic here...
-                                pass
-            st.warning(f"**Disclaimer:** {day_plan['disclaimer']}", icon="⚠️")
+                            if st.button("🔄 Alternative", key=f"swap_exercise_{selected_day_index}_{i}", use_container_width=True):
+                                with st.spinner("Finding alternatives..."):
+                                    alt_prompt = f"Suggest an alternative exercise to {name} that targets similar muscle groups and fits a {fitness_goal.lower()} routine."
+                                    alternative = generate_api_call(alt_prompt)
+                                    if alternative:
+                                        st.success(f"💡 Alternative: {alternative}")
+                        
+                        with btn_col3:
+                            if st.button("📋 Form Tips", key=f"form_{selected_day_index}_{i}", use_container_width=True):
+                                with st.spinner("Getting form tips..."):
+                                    form_prompt = f"Provide proper form and technique tips for: {name}"
+                                    form_tips = generate_api_call(form_prompt)
+                                    if form_tips:
+                                        st.info(form_tips)
+            
+            # Enhanced disclaimer
+            st.warning(f"⚠️ **Important Disclaimer:** {day_plan['disclaimer']}", icon="⚠️")
 
-
-    # --- AI Health Chat Tab ---
+    # --- Enhanced AI Health Chat Tab ---
     with chat_tab:
-        st.header("Your Personal AI Health Assistant")
-        st.markdown("Ask me anything about fitness, nutrition, or your wellness plan!")
+        st.markdown("## 🤖 Your Personal AI Health Assistant")
+        st.info("💬 Ask me anything about fitness, nutrition, wellness, or your personalized plan!")
+        
+        # Initialize chat
         if "messages" not in st.session_state:
-            st.session_state.messages = [{"role": "assistant", "content": "Hello! How can I help you on your wellness journey today?"}]
+            st.session_state.messages = [{
+                "role": "assistant", 
+                "content": "Hello! 👋 I'm your AI Health Coach! I'm here to help you with:\n\n• Fitness and exercise advice\n• Nutrition guidance\n• Wellness tips\n• Questions about your personalized plan\n• Motivation and support\n\nWhat would you like to know today?"
+            }]
+        
+        # Display chat messages
         for message in st.session_state.messages:
-            with st.chat_message(message["role"], avatar="💪" if message["role"] == "assistant" else "👤"):
+            with st.chat_message(message["role"], avatar="🤖" if message["role"] == "assistant" else "👤"):
                 st.markdown(message["content"])
-        if prompt := st.chat_input("What's on your mind?"):
+        
+        # Chat input
+        if prompt := st.chat_input("Ask me anything about your health and fitness journey..."):
+            # Add user message
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user", avatar="👤"):
                 st.markdown(prompt)
-            with st.chat_message("assistant", avatar="💪"):
-                system_prompt = {"role": "system", "content": """You are a friendly and knowledgeable AI Health Coach. Your expertise is in fitness, nutrition, and general wellness. Provide supportive and informative answers. You are not a medical doctor. Always conclude your responses with a gentle reminder for the user to consult with a healthcare professional for any medical advice or diagnosis."""}
+            
+            # Generate assistant response
+            with st.chat_message("assistant", avatar="🤖"):
+                system_prompt = {
+                    "role": "system", 
+                    "content": """You are an expert AI Health Coach with extensive knowledge in:
+                    - Fitness and exercise science
+                    - Nutrition and dietetics
+                    - Mental wellness and motivation
+                    - Injury prevention and recovery
+                    - Lifestyle optimization
+                    
+                    Provide helpful, evidence-based advice while being encouraging and supportive. 
+                    Always remind users to consult healthcare professionals for medical concerns.
+                    Keep responses conversational, practical, and actionable."""
+                }
+                
                 messages_for_api = [system_prompt] + st.session_state.messages
-                stream = client.chat.completions.create(model="gpt-4o", messages=messages_for_api, stream=True)
-                response = st.write_stream(stream)
-            st.session_state.messages.append({"role": "assistant", "content": response})
+                
+                try:
+                    stream = client.chat.completions.create(
+                        model="gpt-4o", 
+                        messages=messages_for_api, 
+                        stream=True,
+                        max_tokens=1000,
+                        temperature=0.7
+                    )
+                    response = st.write_stream(stream)
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                except Exception as e:
+                    error_response = f"I apologize, but I'm having trouble connecting right now. Error: {str(e)}"
+                    st.error(error_response)
+                    st.session_state.messages.append({"role": "assistant", "content": error_response})
+        
+        # Chat controls
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🗑️ Clear Chat", use_container_width=True):
+                st.session_state.messages = [{
+                    "role": "assistant", 
+                    "content": "Chat cleared! How can I help you with your wellness journey today?"
+                }]
+                st.rerun()
+        
+        with col2:
+            if st.button("💡 Quick Tips", use_container_width=True):
+                tips = [
+                    "💧 Drink at least 8 glasses of water daily",
+                    "🚶‍♀️ Take a 10-minute walk after each meal",
+                    "😴 Aim for 7-9 hours of quality sleep",
+                    "🧘‍♂️ Practice 5 minutes of deep breathing daily",
+                    "🥗 Fill half your plate with vegetables",
+                    "📱 Take regular breaks from screens"
+                ]
+                tip = tips[len(st.session_state.messages) % len(tips)]
+                st.info(f"**Daily Tip:** {tip}")
 
 # --- Entry Point ---
-# API Key Configuration
+# API Key Configuration with enhanced error handling
 api_key = os.environ.get("OPENAI_API_KEY")
 if not api_key:
-    # This check runs when deployed on Streamlit Cloud
     try:
         api_key = st.secrets.get("OPENAI_API_KEY")
     except Exception as e:
         api_key = None
 
 if not api_key:
-    st.error("🚨 OPENAI_API_KEY not found! Please set it as an environment variable or in Streamlit Secrets.")
-    st.stop()
+    st.error("""
+    🚨 **OpenAI API Key Required**
     
-client = OpenAI(api_key=api_key)
+    Please set your OpenAI API key:
+    1. As an environment variable: `OPENAI_API_KEY`
+    2. In Streamlit Secrets (for cloud deployment)
+    
+    Get your API key from: https://platform.openai.com/api-keys
+    """)
+    st.stop()
 
+try:
+    client = OpenAI(api_key=api_key)
+except Exception as e:
+    st.error(f"Failed to initialize OpenAI client: {e}")
+    st.stop()
+
+# Initialize session state
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
+# Route to appropriate page
 if st.session_state.logged_in:
     main_app()
 else:
