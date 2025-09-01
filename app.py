@@ -687,53 +687,36 @@ def main_app():
         if st.session_state.get('weight_log'):
             df = pd.DataFrame(st.session_state.weight_log)
             
-            # Enhanced chart with proper data binding
-            goal_df = pd.DataFrame({
-                'week': [df['week'].min(), df['week'].max()],
-                'weight': [st.session_state.goal_weight, st.session_state.goal_weight]
-            })
-
-            # Progress line chart
-            progress_chart = alt.Chart(df).mark_line(
-                point=alt.OverlayMarkDef(filled=True, size=100, color='#e74c3c'),
+            # Create a simple and reliable line chart
+            base_chart = alt.Chart(df).mark_line(
+                point=True,
                 color='#e74c3c',
-                strokeWidth=4
-            ).encode(
-                x=alt.X('week:Q', title='Week', axis=alt.Axis(labelColor='#fafafb', titleColor='#fafafb')),
-                y=alt.Y('weight:Q', title='Weight (kg)', scale=alt.Scale(zero=False), axis=alt.Axis(labelColor='#fafafb', titleColor='#fafafb')),
-                tooltip=[
-                    alt.Tooltip('week:Q', title='Week'),
-                    alt.Tooltip('weight:Q', title='Weight (kg)')
-                ]
-            ).properties(
-                title=alt.TitleParams('Your Weight Progress Journey', fontSize=18, color='#fafafb', anchor='start'),
-                width=600,
-                height=300
-            )
-
-            # Goal line chart
-            goal_chart = alt.Chart(goal_df).mark_line(
-                strokeDash=[8,4], 
-                color='#f39c12',
                 strokeWidth=3
             ).encode(
-                x=alt.X('week:Q'),
-                y=alt.Y('weight:Q'),
-                tooltip=[alt.Tooltip(value='Goal Weight', title='Line')]
+                x=alt.X('week:O', title='Week'),
+                y=alt.Y('weight:Q', title='Weight (kg)'),
+                tooltip=['week:O', 'weight:Q']
+            ).properties(
+                title='Your Weight Progress',
+                width='container',
+                height=400
             )
 
-            # Combine charts
-            combined_chart = (progress_chart + goal_chart).resolve_scale(
-                color='independent'
-            ).configure_view(
-                strokeWidth=0,
-                fill='rgba(21, 32, 42, 0.8)'
-            ).configure_axis(
-                grid=True,
-                gridColor='rgba(255, 255, 255, 0.1)'
+            # Add goal line if we have data
+            goal_weight = st.session_state.goal_weight
+            goal_rule = alt.Chart(pd.DataFrame({'goal': [goal_weight]})).mark_rule(
+                color='#f39c12',
+                strokeDash=[5, 5],
+                strokeWidth=2
+            ).encode(
+                y='goal:Q',
+                tooltip=alt.value(f'Goal: {goal_weight} kg')
             )
+
+            # Combine the charts
+            final_chart = base_chart + goal_rule
             
-            st.altair_chart(combined_chart, use_container_width=True)
+            st.altair_chart(final_chart, use_container_width=True)
         else:
             st.info("📈 Log your weight to see your progress chart here!")
 
