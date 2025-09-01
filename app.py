@@ -775,7 +775,11 @@ def main_app():
                 with st.expander("🛒 Your Consolidated Shopping List", expanded=True):
                     st.markdown(st.session_state.shopping_list)
 
-            selected_day_index = int(selected_day_str.split()[1]) - 1
+            # Extract day number from selected string (handles "📅 Day X" format)
+            try:
+                selected_day_index = day_options.index(selected_day_str)
+            except ValueError:
+                selected_day_index = 0  # Default to first day if parsing fails
             day_plan = weekly_plan[selected_day_index]
             
             # Enhanced day dashboard
