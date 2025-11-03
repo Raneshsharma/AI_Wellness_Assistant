@@ -1,4 +1,22 @@
 # app.py
+"""
+AI Wellness Coach Pro - single-file Streamlit app (copy-paste ready)
+
+Features:
+- Robust sidebar forcing (CSS + ensure_sidebar_shown)
+- Safe programmatic rerun across Streamlit versions (safe_rerun)
+- Hashed demo users stored in session_state
+- Sanitized AI outputs to avoid XSS
+- Cached non-streamed API calls to reduce cost
+- Streaming-friendly handler with safe extraction (best-effort for multiple SDK shapes)
+- Resilient weekly-plan parser tolerant of format variations
+
+USAGE:
+- Save as app.py
+- Set OPENAI_API_KEY in env or Streamlit secrets
+- Run with: streamlit run app.py
+"""
+
 import os
 import re
 import html
@@ -8,11 +26,9 @@ from typing import Optional, List, Dict, Any
 import streamlit as st
 import pandas as pd
 import altair as alt
-
-# OpenAI client import (keep same as your environment)
 from openai import OpenAI
 
-# Page config
+# ---------------- Page config ----------------
 st.set_page_config(page_title="AI Wellness Coach Pro", page_icon="💪", layout="wide", initial_sidebar_state="expanded")
 
 # ---------------- Utilities ----------------
@@ -20,9 +36,9 @@ def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode("utf-8")).hexdigest()
 
 def safe_text(ai_text: Optional[str]) -> str:
+    """Escape HTML in AI outputs to avoid XSS while showing content as readable text."""
     if ai_text is None:
         return ""
-    # Escape HTML to prevent XSS while showing content
     return html.escape(ai_text)
 
 def trim_chat_history(messages: List[Dict[str, str]], keep_last: int = 10) -> List[Dict[str, str]]:
@@ -37,6 +53,7 @@ def trim_chat_history(messages: List[Dict[str, str]], keep_last: int = 10) -> Li
     return head + tail
 
 def safe_rerun():
+    """Attempt to rerun app across Streamlit versions; fallback to user refresh notice."""
     try:
         if hasattr(st, "experimental_rerun"):
             st.experimental_rerun()
@@ -56,17 +73,29 @@ def safe_rerun():
         st.warning("Couldn't programmatically rerun the app in this Streamlit version. Please refresh the page (F5).")
         return
 
+def ensure_sidebar_shown():
+    """
+    Force Streamlit to render the sidebar DOM early by writing a tiny element into it.
+    This guarantees CSS selectors find the sidebar and prevents it from being missing.
+    """
+    try:
+        st.sidebar.markdown("<div style='min-height:1px;opacity:0.01'></div>", unsafe_allow_html=True)
+    except Exception:
+        pass
+
 # ---------------- OpenAI helpers ----------------
 @st.cache_data(show_spinner=False)
 def cached_generate_api_call(prompt: str, model: str = "gpt-4o", max_tokens: int = 800, temperature: float = 0.7) -> Optional[str]:
+    """Cached wrapper around generate_api_call to reduce repeated costs for identical prompts."""
     return generate_api_call(prompt, model=model, max_tokens=max_tokens, temperature=temperature, use_cache=False)
 
 def generate_api_call(prompt: str, model: str = "gpt-4o", max_tokens: int = 800, temperature: float = 0.7, use_cache: bool = True) -> Optional[str]:
+    """Non-streamed API call with robust content extraction for multiple SDK response shapes."""
     try:
         resp = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "You are an expert wellness coach with knowledge in nutrition, fitness, and mental health."},
+                {"role": "system", "content": "You are an expert wellness coach with extensive knowledge in nutrition, fitness, and mental health."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=max_tokens,
@@ -76,6 +105,7 @@ def generate_api_call(prompt: str, model: str = "gpt-4o", max_tokens: int = 800,
         st.error(f"AI call failed: {e}")
         return None
 
+    # Try common shapes
     content = None
     try:
         choice = resp.choices[0]
@@ -103,6 +133,10 @@ def generate_api_call(prompt: str, model: str = "gpt-4o", max_tokens: int = 800,
     return content
 
 def stream_chat_to_ui(messages_for_api: List[Dict[str, str]], model: str = "gpt-4o", temperature: float = 0.7, max_tokens: int = 1000) -> str:
+    """
+    Stream the API response and append chunks to UI placeholder as they arrive.
+    Returns accumulated final string. Best-effort extraction for multiple SDK chunk shapes.
+    """
     accumulated = ""
     placeholder = st.empty()
     try:
@@ -121,10 +155,11 @@ def stream_chat_to_ui(messages_for_api: List[Dict[str, str]], model: str = "gpt-
         for chunk in stream:
             text_piece = None
             try:
+                # Common shapes: chunk.delta.content or chunk.choices[0].delta.content
                 if hasattr(chunk, "delta"):
                     delta = getattr(chunk, "delta")
                     if isinstance(delta, dict):
-                        text_piece = delta.get("content") or delta.get("message", {}).get("content")
+                        text_piece = delta.get("content") or (delta.get("message") or {}).get("content")
                     else:
                         text_piece = getattr(delta, "content", None)
                 else:
@@ -161,15 +196,24 @@ def stream_chat_to_ui(messages_for_api: List[Dict[str, str]], model: str = "gpt-
         st.error(f"Error while streaming response: {e}")
         return accumulated
 
-# ---------------- Robust weekly plan parser ----------------
+# ---------------- Weekly plan parser ----------------
 def parse_weekly_plan(plan_text: str) -> List[Dict[str, Any]]:
+    """
+    Robust parser that tolerates variation in headings and formatting.
+    Returns list of up to 7 day dicts with keys: calories, diet [(name,instr)], exercise [(name,instr)], motivation, disclaimer
+    """
     if not plan_text:
         return []
+
     text = plan_text.replace("\r\n", "\n")
+
     disc_match = re.search(r"(?is)(?:###\s*Disclaimer\s*###|###\s*Disclaimer\s*|Disclaimer\s*:)(.*?)(?=\n##\s*Day|\n#\s*Day|\n## Day|\Z)", text)
-    disclaimer_text = disc_match.group(1).strip() if disc_match else "Please consult a professional before starting new diet/exercise."
+    disclaimer_text = disc_match.group(1).strip() if disc_match else "Please consult a professional before starting any new diet or exercise program."
+
+    # Split by common "Day" headings
     day_blocks = re.split(r"(?im)(?:^##\s*Day\s*\d+\s*##|^##\s*Day\s*\d+|^#\s*Day\s*\d+|\n##\s*Day\s*\d+\s*##)", text)
     day_blocks = [b.strip() for b in day_blocks if b.strip()]
+
     parsed = []
     for block in day_blocks[:7]:
         cal_match = re.search(r"(?is)###\s*Estimated\s*Daily\s*Calorie\s*Target\s*###\s*(.*?)(?=\n###|\Z)", block)
@@ -185,12 +229,14 @@ def parse_weekly_plan(plan_text: str) -> List[Dict[str, Any]]:
             items = []
             if not raw_text:
                 return items
+            # Primary pattern: **Name: Title**\nInstructions...
             pattern = re.findall(r"\*\*\s*([^:*]+?)(?:\s*[:\-]\s*([^*].*?))?\s*\*\*\s*\n(.*?)(?=\n\*\*|\Z)", raw_text, re.DOTALL)
             if pattern:
                 for name, title, instr in pattern:
                     display_name = (title.strip() if title else name.strip())
                     items.append((display_name, instr.strip()))
                 return items
+            # fallback: line-by-line grouping
             lines = [ln.strip() for ln in raw_text.split("\n") if ln.strip()]
             temp_name = None
             temp_text = []
@@ -232,14 +278,15 @@ def parse_weekly_plan(plan_text: str) -> List[Dict[str, Any]]:
 
     while len(parsed) < 7:
         parsed.append({"calories": "", "diet": [], "exercise": [], "motivation": "", "disclaimer": disclaimer_text})
+
     return parsed
 
-# ---------------- CSS / UI helpers ----------------
-def apply_css(css_style: str):
-    st.markdown(f"<style>{css_style}</style>", unsafe_allow_html=True)
+# ---------------- CSS / UI ----------------
+def apply_css(css: str):
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 def inject_video_background():
-    background_css = """
+    css = """
     <style>
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
@@ -247,14 +294,15 @@ def inject_video_background():
     .login-container { padding: 2rem; border-radius: 12px; max-width: 720px; margin: 0 auto; }
     </style>
     """
-    st.markdown(background_css, unsafe_allow_html=True)
+    st.markdown(css, unsafe_allow_html=True)
 
 def get_main_app_css() -> str:
+    # Strong CSS to force sidebar visible and prevent overlap
     return """
-    /* Sidebar forced visible and above content */
-    #MainMenu { visibility: hidden; }
-    footer { visibility: hidden; }
-    header { visibility: hidden; }
+    /* keep Streamlit chrome minimal */
+    #MainMenu { visibility: hidden !important; }
+    footer { visibility: hidden !important; }
+    header { visibility: hidden !important; }
 
     [data-testid="stSidebar"] {
         display: block !important;
@@ -264,19 +312,23 @@ def get_main_app_css() -> str:
         left: 0 !important;
         height: 100vh !important;
         width: 320px !important;
-        z-index: 10000 !important;
-        background: linear-gradient(180deg, rgba(21,32,42,0.95), rgba(15,20,25,0.95)) !important;
-        padding-top: 1rem !important;
+        max-width: 40vw !important;
+        z-index: 99999 !important;
+        background: linear-gradient(180deg, rgba(21,32,42,0.98), rgba(15,20,25,0.98)) !important;
+        padding: 1rem 0.8rem !important;
         overflow-y: auto !important;
-        box-shadow: 2px 0 8px rgba(0,0,0,0.4) !important;
+        box-shadow: 2px 0 18px rgba(0,0,0,0.5) !important;
+        transform: none !important;
     }
 
     @media (min-width: 900px) {
         [data-testid="stAppViewContainer"] > .main {
             margin-left: 340px !important;
-            transition: margin-left 0.2s ease;
+            transition: margin-left 0.15s ease !important;
+            z-index: 1 !important;
         }
     }
+
     @media (max-width: 899px) {
         [data-testid="stAppViewContainer"] > .main {
             margin-left: 0 !important;
@@ -286,9 +338,13 @@ def get_main_app_css() -> str:
             width: auto !important;
             height: auto !important;
             box-shadow: none !important;
+            z-index: 1 !important;
         }
     }
-    .stButton>button { border-radius: 8px; }
+
+    .login-container, .main, .stApp { z-index: 1 !important; }
+    [data-testid="stSidebar"] * { color: #fafafb !important; }
+    .stButton>button { border-radius: 8px !important; }
     """
 
 def create_enhanced_header():
@@ -301,6 +357,8 @@ def create_enhanced_header():
 
 # ---------------- Pages ----------------
 def login_page():
+    # ensure sidebar DOM exists so CSS can take effect even on login
+    ensure_sidebar_shown()
     inject_video_background()
     st.markdown('<br><br>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 2, 1])
@@ -386,7 +444,10 @@ def login_page():
         st.markdown('</div>', unsafe_allow_html=True)
 
 def main_app():
+    # Ensure sidebar is present in DOM BEFORE applying CSS
+    ensure_sidebar_shown()
     apply_css(get_main_app_css())
+
     with st.sidebar:
         st.markdown(f"""
             <div style="text-align:center;padding:1rem;background:linear-gradient(45deg,#e74c3c,#c0392b);border-radius:8px;">
@@ -403,53 +464,55 @@ def main_app():
 
         st.divider()
         st.markdown("### 👤 Your Details")
-        age = st.slider("🎂 Age", 16, 100, int(st.session_state.get('age',25)))
-        gender = st.selectbox("⚧ Gender", ("Male","Female","Other"))
-        height = st.slider("📏 Height (cm)", 100, 250, int(st.session_state.get('height',170)))
-        weight = st.slider("⚖️ Weight (kg)", 30, 200, int(st.session_state.get('weight',70)))
+        age = st.slider("🎂 Age", 16, 100, int(st.session_state.get('age', 25)))
+        gender = st.selectbox("⚧ Gender", ("Male", "Female", "Other"))
+        height = st.slider("📏 Height (cm)", 100, 250, int(st.session_state.get('height', 170)))
+        weight = st.slider("⚖️ Weight (kg)", 30, 200, int(st.session_state.get('weight', 70)))
         st.session_state.update({'age': age, 'gender': gender, 'height': height, 'weight': weight})
 
         st.markdown("### 🎯 Preferences")
-        diet_preference = st.selectbox("🥗 Diet", ("No Preference","Vegetarian","Vegan","Keto","Paleo","Mediterranean"))
-        fitness_goal = st.selectbox("🏆 Goal", ("Lose Weight","Gain Muscle","Maintain Weight","Improve Endurance","General Wellness"))
+        diet_preference = st.selectbox("🥗 Diet", ("No Preference", "Vegetarian", "Vegan", "Keto", "Paleo", "Mediterranean"))
+        fitness_goal = st.selectbox("🏆 Goal", ("Lose Weight", "Gain Muscle", "Maintain Weight", "Improve Endurance", "General Wellness"))
 
         st.divider()
         generate_button = st.button("✨ Generate My 7-Day Plan!", use_container_width=True)
 
     create_enhanced_header()
-    tabs = st.tabs(["📊 Profile & Progress","📅 Plan Generator","💬 AI Health Chat"])
-    profile_tab, plan_tab, chat_tab = tabs
 
+    profile_tab, plan_tab, chat_tab = st.tabs(["📊 Profile & Progress", "📅 Plan Generator", "💬 AI Health Chat"])
+
+    # ---------- Profile Tab ----------
     with profile_tab:
         st.markdown("## 📈 Dashboard")
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            bmi = weight / ((height/100)**2) if height > 0 else 0
+            bmi = weight / ((height/100) ** 2) if height > 0 else 0
             st.metric("BMI", f"{bmi:.1f}")
         with col2:
             st.metric("Plans Generated", len(st.session_state.get('weight_log', [])))
         with col3:
             st.metric("Current Weight", f"{weight} kg")
         with col4:
-            goal = st.session_state.get('goal_weight',75)
-            st.metric("To Goal", f"{(weight-goal):+.1f} kg")
+            goal = st.session_state.get('goal_weight', 75)
+            st.metric("To Goal", f"{(weight - goal):+.1f} kg")
 
         st.divider()
         st.markdown("### ✍️ Log Progress")
         current_weight = st.number_input("Today's Weight (kg)", min_value=30.0, max_value=200.0, value=float(weight))
         if st.button("📝 Log Weight"):
-            st.session_state.setdefault('weight_log', []).append({"week": len(st.session_state.get('weight_log',[]))+1, "weight": float(current_weight)})
+            st.session_state.setdefault('weight_log', []).append({"week": len(st.session_state.get('weight_log', [])) + 1, "weight": float(current_weight)})
             st.success("Logged weight.")
 
         st.divider()
         st.markdown("### 📊 Progress Chart")
         if st.session_state.get('weight_log'):
             df = pd.DataFrame(st.session_state.weight_log)
-            chart = alt.Chart(df).mark_line(point=True).encode(x=alt.X('week:O'), y=alt.Y('weight:Q'), tooltip=['week','weight']).properties(height=350)
+            chart = alt.Chart(df).mark_line(point=True).encode(x=alt.X('week:O'), y=alt.Y('weight:Q'), tooltip=['week', 'weight']).properties(height=350)
             st.altair_chart(chart, use_container_width=True)
         else:
             st.info("Log weight to see chart.")
 
+    # ---------- Plan Generator Tab ----------
     with plan_tab:
         st.markdown("## 📅 Plan Generator")
         st.info("Your sidebar inputs prefill the generation. Click to generate.")
@@ -498,31 +561,33 @@ def main_app():
 
             st.warning(f"⚠️ Disclaimer: {safe_text(day.get('disclaimer',''))}")
 
+    # ---------- Chat Tab ----------
     with chat_tab:
         st.markdown("## 🤖 AI Health Chat")
         if "messages" not in st.session_state:
-            st.session_state.messages = [{"role":"assistant","content":"Hello! I'm your AI Health Coach. Ask me anything."}]
+            st.session_state.messages = [{"role": "assistant", "content": "Hello! I'm your AI Health Coach. Ask me anything."}]
+
         for msg in st.session_state.messages:
-            with st.chat_message(msg["role"], avatar="🤖" if msg["role"]=="assistant" else "👤"):
+            with st.chat_message(msg["role"], avatar="🤖" if msg["role"] == "assistant" else "👤"):
                 st.markdown(safe_text(msg["content"]))
 
         user_input = st.chat_input("Ask about fitness, nutrition, or your plan...")
         if user_input:
-            st.session_state.messages.append({"role":"user","content":user_input})
+            st.session_state.messages.append({"role": "user", "content": user_input})
             st.session_state.messages = trim_chat_history(st.session_state.messages, keep_last=10)
-            system_prompt = {"role":"system","content":"You are an expert AI Health Coach; be practical, evidence-based, and cautious."}
+            system_prompt = {"role": "system", "content": "You are an expert AI Health Coach; be practical, evidence-based, and cautious."}
             messages_for_api = [system_prompt] + st.session_state.messages[-10:]
             with st.chat_message("assistant", avatar="🤖"):
                 reply = stream_chat_to_ui(messages_for_api)
                 if reply:
-                    st.session_state.messages.append({"role":"assistant","content":reply})
+                    st.session_state.messages.append({"role": "assistant", "content": reply})
                 else:
                     err = "Sorry — couldn't get a reply right now."
-                    st.session_state.messages.append({"role":"assistant","content":err})
+                    st.session_state.messages.append({"role": "assistant", "content": err})
                     st.error(err)
 
         if st.button("🗑️ Clear Chat"):
-            st.session_state.messages = [{"role":"assistant","content":"Chat cleared. How can I help?"}]
+            st.session_state.messages = [{"role": "assistant", "content": "Chat cleared. How can I help?"}]
             safe_rerun()
 
 # ---------------- Entry point ----------------
@@ -534,11 +599,12 @@ if not api_key:
 try:
     client = OpenAI(api_key=api_key)
 except Exception as e:
-    st.error(f"Failed to init OpenAI client: {e}")
+    st.error(f"Failed to initialize OpenAI client: {e}")
     st.stop()
 
 st.session_state.setdefault('logged_in', False)
 
+# Route to pages
 if st.session_state.logged_in:
     main_app()
 else:
